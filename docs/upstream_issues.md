@@ -10,3 +10,9 @@ unless stated otherwise; they should be reported/fixed upstream and then in both
 | `traj123/bmTraj_norm.m` | `reshape(myNorm, mySize(1, 2:end))` errors in MATLAB for a 2-D trajectory `[imDim, nPt]` (size vector with one element). | returns `(nPt, 1)` |
 | `gridding123/m/bmGridder_n2u_leight.m` + MEX | The MEX kernels always use a Gaussian kernel (`kernelParam(1)` as sigma), whatever `kernelType`; with `'kaiser'`, `bmMathilda` deapodizes with the Kaiser–Bessel kernel while gridding with a Gaussian of sigma = 1.95. | reproduced |
 | `rawDataReader/siemens/dhSiemensReadMetaData.m` | `autoFlag = false` (used by the tutorial) opens metadata dialogs; batch use needs `autoFlag = true`. | n/a |
+| `optim/bmBackGradient_nT.m` | Not the exact adjoint of `bmBackGradient_n`: it computes `(P x - circshift(x, -1)) / dX` instead of `(P x - circshift(P x, -1)) / dX` (P zeroes the first slice), so `<G x, y> ≠ <x, Gᵀ y>` by the wrap-around slice (15 % on random 8×6×4 data; negligible for images with empty borders). | reproduced |
+| `mathOp/bmNorm.m` | Calls itself (`sqrt(bmNorm(x, H))`): infinite recursion; probably meant `sqrt(bmSquaredNorm(x, H))`. | not ported (outside the demo scope) |
+| `coilSense/nonCart/bmCoilSense_nonCart_mask_automatic.m` | The second column of `borders` returned by `detectROI` is a width but is used as an upper index; the upper y/z cuts use `borders(k,2):end` and the lower z cut `1:borders(3,1)` (off by one compared with x). | reproduced |
+| `traj3/bmTraj_fullRadial3_phyllotaxis_lineAssym2.m` | With the 6-argument call, `flagExcludeSI` is undefined (MATLAB error when used). | no exclusion in that case |
+| `image123/bmImZeroFill.m` | 1D branch reads the undefined variable `u`. | raises like MATLAB |
+| `coilSense` / tutorial 1 | `bmCoilSense_nonCart_mask_automatic(y, Gn, false)` (as in the tutorial script) opens interactive windows and blocks in batch mode (`uiwait`). | `autoFlag = True` required |
