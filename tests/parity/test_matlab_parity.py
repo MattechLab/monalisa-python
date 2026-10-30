@@ -19,7 +19,8 @@ def _id(path: Path) -> str:
 @pytest.mark.parity
 @pytest.mark.skipif(not RECORDS, reason=f"no MATLAB recordings in {FIXTURES}")
 @pytest.mark.parametrize("path", RECORDS, ids=_id)
-def test_parity(path):
+def test_parity(path, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # some functions (witness of iterative solvers) write files
     rec = load_record(path)
     func = monalisa.find_function(rec.func)
     if func is None:

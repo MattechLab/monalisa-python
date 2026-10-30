@@ -184,6 +184,8 @@ def replay(rec: Record, func, check_mutation: bool = True) -> list:
     res = func(*args, **kwargs)
     if check_mutation:
         for i, (a, s) in enumerate(zip(args, saved, strict=True)):
+            if getattr(a, "_matlab_handle", False):  # MATLAB handle objects are mutable by design
+                continue
             if compare(a, s, Tolerance(rel_l2=0.0, rtol=0.0), f"input{i + 1}") and s is not None:
                 raise AssertionError(f"{rec.func} modified its input argument {i + 1} in place")
     if rec.nargout == 0:
