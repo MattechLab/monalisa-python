@@ -7,6 +7,8 @@ import inspect
 from dataclasses import dataclass
 
 import numpy as np
+import scipy.sparse as sp
+import scipy.sparse.linalg  # noqa: F401  (sp.linalg.norm)
 
 from monalisa._mat import Struct, cell_items, cell_shape, iscell, msize
 from monalisa.testing.fixtures import Record, from_matlab
@@ -65,6 +67,18 @@ def compare(py, ml, tol: Tolerance = _DEFAULT, path: str = "out") -> list[str]:
 
     if isinstance(ml, str):
         return [] if py == ml else [f"{path}: expected {ml!r}, got {py!r}"]
+
+    if sp.issparse(ml):
+        if not sp.issparse(py):
+            return [f"{path}: expected sparse{ml.shape}, got {_describe(py)}"]
+        if py.shape != ml.shape:
+            return [f"{path}: sparse size {py.shape} != MATLAB {ml.shape}"]
+        a, b = sp.csr_matrix(py, dtype=np.complex128), sp.csr_matrix(ml, dtype=np.complex128)
+        rel_l2_max, _ = tol.limits(_precision(ml.dtype))
+        nb = sp.linalg.norm(b)
+        d = sp.linalg.norm(a - b)
+        rel = d / nb if nb > 0 else d
+        return [] if rel <= rel_l2_max else [f"{path}: sparse rel_l2={rel:.3e} (max {rel_l2_max:.0e})"]
 
     if hasattr(ml, "parity_fields"):
         if not hasattr(py, "parity_fields"):

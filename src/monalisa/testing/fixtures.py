@@ -122,6 +122,11 @@ def from_matlab(x, role: str = "input"):
         cls = fields.pop("mlpClass", None)
         if cls is not None:
             conv = OBJECT_CONVERTERS.get(cls)
+            if conv is None:
+                import monalisa
+
+                ported = monalisa.find_function(cls)
+                conv = getattr(ported, "from_matlab_fields", None)
             if conv is not None:
                 return conv(fields)
             s = Struct(fields)
