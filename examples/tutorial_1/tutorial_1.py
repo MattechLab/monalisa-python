@@ -1,0 +1,161 @@
+"""Monalisa tutorial 1 in Python: coil sensitivity, binning, mitosius and gridded reconstruction.
+
+Python counterpart of demo/script_demo/script_tutorial_1/*.m (upstream), without display and
+without interactive steps:
+
+* raw data readers use ``autoFlag=True`` (no metadata dialogs);
+* the normalization ROI drawn with ``roipoly`` in MATLAB is replaced by a centered disk of
+  radius N/4 in the central slice (same rule as tools/matlab_capture/scenarios/scenario_tutorial_recon.m);
+* both binnings (all lines, sequential 5 s windows) are processed.
+
+Usage::
+
+    python examples/tutorial_1/tutorial_1.py --data /path/to/data_8_tutorial_1 --out results_py
+"""
+
+from __future__ import annotations
+
+import argparse
+import time
+from pathlib import Path
+
+import numpy as np
+
+import monalisa as ml
+from monalisa.readWrite._mat73 import loadmat73, savemat73
+
+
+def _log(msg):
+    print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def coil_sensitivity(data_dir: Path, out_dir: Path) -> np.ndarray:
+    """Coil sensitivity maps C (48^3 x nCh) from the body and surface coil scans."""
+    body = ml.createRawDataReader(data_dir / "bodyCoil.dat", True)
+    head = ml.createRawDataReader(data_dir / "surfaceCoil.dat", True)
+    nShotOff = max(body.acquisitionParams.nShot_off, head.acquisitionParams.nShot_off)
+    for r in (body, head):
+        r.acquisitionParams.nShot_off = nShotOff
+        r.acquisitionParams.traj_type = "full_radial3_phylotaxis"
+    dK_u = np.array([[1.0, 1.0, 1.0]]) / head.acquisitionParams.FoV
+    N_u = np.array([[48.0, 48.0, 48.0]])
+    y_body, t, ve = ml.bmCoilSense_nonCart_data(body, N_u)
+    y_surface = ml.bmCoilSense_nonCart_data(head, N_u, nargout=1)
+    Gn, Gu, Gut = ml.bmTraj2SparseMat(t, ve, N_u, dK_u)
+    mask = ml.bmCoilSense_nonCart_mask_automatic(y_body, Gn, True)
+    y_ref, C_ref = ml.bmCoilSense_nonCart_ref(y_body, Gn, mask, None)
+    C_prime = ml.bmCoilSense_nonCart_primary(y_surface, y_ref, C_ref, Gn, ve, mask)
+    C = ml.bmCoilSense_nonCart_secondary(y_surface, C_prime, y_ref, C_ref, Gn, Gu, Gut, ve, 5, False)
+    savemat73(out_dir / "coil_sensitivity_map.mat", {"C": C})
+    return C
+
+
+def binnings(reader) -> tuple[np.ndarray, np.ndarray]:
+    """All-lines mask (steady state, no self-navigation lines) and sequential 5 s masks."""
+    p = reader.acquisitionParams
+    nSeg = int(p.nSeg)
+    nExclude = int(p.nShot_off) * nSeg
+    nLines = int(p.nLine)
+    ts = np.ravel(np.asarray(p.timestamp, dtype=np.float64))
+    timestampMs = (ts - ts.min()) * 2.5  # Siemens time stamps are in 2.5 ms units
+    si = np.arange(0, nLines, nSeg)  # first line of every shot (self navigation)
+
+    allLines = np.ones((1, nLines), dtype=bool)
+    allLines[0, :nExclude] = False
+    allLines[0, si] = False
+
+    window = 5 * 1000.0
+    start = timestampMs[nExclude]
+    nMasks = int(np.floor((timestampMs[-1] - start) / window))
+    seq = np.zeros((nMasks, nLines), dtype=bool)
+    for i in range(nMasks):
+        w0 = start + i * window
+        m = (timestampMs >= w0) & (timestampMs < w0 + window)
+        m[si] = False
+        seq[i] = m
+    return allLines, seq
+
+
+def _normalization(x_tot, N):
+    """Fixed replacement of the interactive ROI: centered disk of radius N/4, central slice."""
+    temp_im = np.abs(x_tot[:, :, N // 2])
+    gx, gy = np.meshgrid(np.arange(1, N + 1), np.arange(1, N + 1), indexing="ij")
+    roi = (gx - (N / 2 + 1)) ** 2 + (gy - (N / 2 + 1)) ** 2 <= (N / 4) ** 2
+    return np.mean(temp_im[roi])
+
+
+def mitosius(reader, C, masks: dict, out_dir: Path) -> dict:
+    """Normalize the raw data and write one mitosius folder per binning."""
+    p = reader.acquisitionParams
+    p.traj_type = "full_radial3_phylotaxis"
+    _log("reading raw data")
+    y_tot = reader.readRawData(True, True)
+    t_tot = ml.bmTraj(p)
+    _log("volume elements")
+    ve_tot = ml.bmVolumeElement(t_tot, "voronoi_full_radial3")
+    N = int(np.ravel(p.FoV)[0] / 3)
+    N_u = np.array([[N, N, N]], dtype=np.float64)
+    C = ml.bmImResize(C, [48, 48, 48], N_u)
+    _log("gridded reconstruction for normalization")
+    x_tot = ml.bmMathilda(y_tot, t_tot, ve_tot, C, N_u, N_u, np.array([[1.0, 1.0, 1.0]]) / 384)
+    normalize_val = _normalization(x_tot, N)
+    y_tot = y_tot / normalize_val  # single / single, as in MATLAB
+    savemat73(out_dir / "mitosius_prep.mat", {"x_tot": x_tot, "normalize_val": np.float32(normalize_val),
+                                              "ve_tot": ve_tot})
+    nSeg, nShot_off = int(p.nSeg), int(p.nShot_off)
+    for name, mask in masks.items():
+        _log(f"mitosis {name}")
+        m = np.reshape(mask, (mask.shape[0], nSeg, mask.shape[1] // nSeg), order="F")
+        m = m[:, 1:, nShot_off:]
+        m = ml.bmPointReshape(m)
+        y, t = ml.bmMitosis(y_tot, t_tot, m, nargout=2)
+        y = ml.bmPermuteToCol(y)
+        ve = ml.bmVolumeElement(t, "voronoi_full_radial3")
+        ml.bmMitosius_create(str(out_dir / f"mitosius_{name}"), y, t, ve)
+    return {"normalize_val": normalize_val, "x_tot": x_tot}
+
+
+def reconstructions(C, FoV: float, out_dir: Path, nFr: int = 8) -> dict:
+    """Gridded reconstructions: all lines (x0) and the first nFr sequential bins (x1)."""
+    N = int(FoV / 3)
+    N_u = np.array([[N, N, N]], dtype=np.float64)
+    dK_u = np.array([[1.0, 1.0, 1.0]]) / FoV
+    C = ml.bmImResize(C, [48, 48, 48], N_u)
+    d = str(out_dir / "mitosius_allLines")
+    y, t, ve = (ml.bmMitosius_load(d, k) for k in ("y", "t", "ve"))
+    x0 = ml.bmMathilda(y.flat[0], t.flat[0], ve.flat[0], C, N_u, N_u, dK_u)
+    d = str(out_dir / "mitosius_sequential")
+    y, t, ve = (ml.bmMitosius_load(d, k) for k in ("y", "t", "ve"))
+    x1 = [ml.bmMathilda(y.flat[i], t.flat[i], ve.flat[i], C, N_u, N_u, dK_u) for i in range(nFr)]
+    savemat73(out_dir / "reconstructions.mat", {"x0": x0, **{f"x1_{i + 1}": x for i, x in enumerate(x1)}})
+    return {"x0": x0, "x1": x1}
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--data", type=Path, required=True,
+                    help="folder with bodyCoil.dat, surfaceCoil.dat, brainScan.dat")
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--coil-map", type=Path, default=None,
+                    help="reuse a coil_sensitivity_map.mat (variable C)")
+    args = ap.parse_args(argv)
+    args.out.mkdir(parents=True, exist_ok=True)
+
+    t0 = time.time()
+    if args.coil_map is not None:
+        C = loadmat73(args.coil_map)["C"]
+    else:
+        _log("coil sensitivity")
+        C = coil_sensitivity(args.data, args.out)
+    _log("binnings")
+    reader = ml.createRawDataReader(args.data / "brainScan.dat", True)
+    allLines, seq = binnings(reader)
+    savemat73(args.out / "binning.mat", {"allLinesMask": allLines, "sequentialMask": seq})
+    mitosius(reader, C, {"allLines": allLines, "sequential": seq}, args.out)
+    _log("reconstructions")
+    reconstructions(C, float(np.ravel(reader.acquisitionParams.FoV)[0]), args.out)
+    _log(f"done in {time.time() - t0:.0f} s")
+
+
+if __name__ == "__main__":
+    main()

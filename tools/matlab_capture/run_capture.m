@@ -13,7 +13,8 @@ for i = 1:2:numel(varargin)
 end
 
 here = fileparts(mfilename('fullpath'));
-instrDir = fullfile(here, '..', '..', 'build', 'matlab_instrumented', 'src');
+% one instrumented copy per scenario, so that scenarios can run concurrently
+instrDir = fullfile(here, '..', '..', 'build', 'matlab_instrumented', scenario, 'src');
 if opt.reinstrument || ~exist(instrDir, 'dir')
     n = mlp_instrument(fullfile(upstreamRoot, 'src'), instrDir);
     fprintf('Instrumented %d functions in %s\n', n, instrDir);

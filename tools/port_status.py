@@ -23,11 +23,12 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parents[1] / "tests" / "parity"))
 
+from tolerances import KNOWN_DIVERGENCES, tolerance_for  # noqa: E402
+from upstream_graph import scope  # noqa: E402
+
 import monalisa  # noqa: E402
 from monalisa._mat import cell_items, iscell  # noqa: E402
 from monalisa.testing import compare, from_matlab, iter_records, load_record, replay  # noqa: E402
-from tolerances import KNOWN_DIVERGENCES, tolerance_for  # noqa: E402
-from upstream_graph import scope  # noqa: E402
 
 
 def _rel_l2(py, ml) -> float:
@@ -124,7 +125,8 @@ def main():
             if r["pass"]:
                 n_validated += 1
         rel = f"{r['rel_l2']:.1e}" if (r and ported and r["pass"]) else ""
-        rows.append(f"| `{name}` | {it['path']} | {it['code_lines']} | {'yes' if ported else ''} | {parity} | {rel} |")
+        mark = "yes" if ported else ""
+        rows.append(f"| `{name}` | {it['path']} | {it['code_lines']} | {mark} | {parity} | {rel} |")
 
     total_lines = sum(i["code_lines"] for i in items)
     head = [
