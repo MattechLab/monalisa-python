@@ -53,7 +53,11 @@ ctx = struct('upstream', upstreamRoot, ...
 set(0, 'DefaultFigureVisible', 'off');
 rng(0);
 tStart = tic;
-feval(['scenario_', scenario], ctx);
+scenarioError = [];
+try
+    feval(['scenario_', scenario], ctx);
+catch scenarioError
+end
 MLP_STATE.enabled = false;
 
 fid = fopen(fullfile(outDir, 'capture_log.csv'), 'w');
@@ -69,4 +73,7 @@ for i = 1:numel(fns)
 end
 fclose(fid);
 fprintf('Scenario %s done in %.1f s: %d functions called.\n', scenario, toc(tStart), numel(fns));
+if ~isempty(scenarioError)
+    rethrow(scenarioError);
+end
 end

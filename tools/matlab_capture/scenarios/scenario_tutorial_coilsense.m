@@ -27,7 +27,7 @@ x_body = bmMathilda(y_body, t, ve, [], N_u, N_u, dK_u); %#ok<NASGU>
 x_surf = bmMathilda(y_surface, t, ve, [], N_u, N_u, dK_u); %#ok<NASGU>
 
 [Gn, Gu, Gut] = bmTraj2SparseMat(t, ve, N_u, dK_u);
-mask = bmCoilSense_nonCart_mask_automatic(y_body, Gn, false);
+mask = bmCoilSense_nonCart_mask_automatic(y_body, Gn, autoFlag);
 [y_ref, C_ref] = bmCoilSense_nonCart_ref(y_body, Gn, mask, []);
 C_array_prime = bmCoilSense_nonCart_primary(y_surface, y_ref, C_ref, Gn, ve, mask);
 nIter = 5;
@@ -40,5 +40,4 @@ x_crop = bmMathilda(y_surface, t, ve, C(9:40, 9:40, 9:40, :), N_u, [32, 32, 32],
 N2 = [64, 64, 64];
 C2 = bmImResize(C, N_u, N2);
 x_big = bmMathilda(y_surface, t, ve, C2, N2, N2, dK_u); %#ok<NASGU>
-ve3 = bmVolumeElement(t, 'voronoi_full_radial3'); %#ok<NASGU>
 end

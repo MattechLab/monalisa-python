@@ -85,6 +85,11 @@ def compare(py, ml, tol: Tolerance = _DEFAULT, path: str = "out") -> list[str]:
             return [f"{path}: expected {type(ml).__name__}, got {_describe(py)}"]
         return compare(Struct(py.parity_fields()), Struct(ml.parity_fields()), tol, path)
 
+    plain = (dict, np.ndarray, np.generic, bool, int, float, complex)
+    if not isinstance(ml, plain) and hasattr(ml, "__dict__"):
+        fields = {k: v for k, v in vars(ml).items() if not k.startswith("_")}
+        return compare(py, Struct(fields), tol, path)
+
     if isinstance(ml, Struct):
         issues = []
         for key, val in ml.items():

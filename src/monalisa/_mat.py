@@ -198,3 +198,9 @@ def num2str_row(v) -> str:
 
 def is_single(x) -> bool:
     return np.asarray(x).dtype in (np.float32, np.complex64)
+
+
+def imsize_ints(res):
+    """``(im, imDim, imSize)`` from ``bmImReshape`` with Python ints for indexing."""
+    im, imDim, imSize = res[:3]
+    return im, int(imDim), tuple(int(s) for s in np.ravel(imSize))

@@ -24,8 +24,10 @@ def _function_index() -> dict[str, str]:
     """Map ported function names to their module paths, without importing them."""
     root = Path(__file__).parent
     index = {}
-    for path in root.rglob("bm*.py"):
+    for path in root.rglob("*.py"):
         rel = path.relative_to(root).with_suffix("")
+        if rel.parts[0] == "testing" or any(part.startswith("_") for part in rel.parts):
+            continue
         index[path.stem] = "monalisa." + ".".join(rel.parts)
     return index
 
