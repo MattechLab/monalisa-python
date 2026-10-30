@@ -23,4 +23,10 @@ x = bmTevaMorphosia_chain(x0, [], [], y, ve, C, Gu, Gut, frSize, [], [], 0.1, 1,
 [Tu1, Tu1t] = bmImDeformField2SparseMat(DF_to_prev, N_u, [], true);
 x = bmTevaMorphosia_chain(x0, [], [], y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, 0.3, 3, 'normal', ...
                           nCGD, ve_max, nIter, bmWitnessInfo('teva_df', [1, nIter], false)); %#ok<NASGU>
+x = bmTevaDuoMorphosia_chain(x0, [], [], [], [], y, ve, C, Gu, Gut, frSize, [], [], [], [], 0.1, 1, 'normal', ...
+                             nCGD, ve_max, nIter, bmWitnessInfo('duo', [1, nIter], false));
+[DF_to_next, ~] = bmImDeformFieldChain_imRegDemons23(x, frSize, 'curr_to_next', 50, 1, [], S.reg_mask, 10);
+[Tu2, Tu2t] = bmImDeformField2SparseMat(DF_to_next, N_u, [], true);
+x = bmTevaDuoMorphosia_chain(x0, [], [], [], [], y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, Tu2, Tu2t, 0.3, 3, 'adapt', ...
+                             nCGD, ve_max, nIter, bmWitnessInfo('duo_df', [1, nIter], false)); %#ok<NASGU>
 end
