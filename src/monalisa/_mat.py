@@ -204,3 +204,9 @@ def imsize_ints(res):
     """``(im, imDim, imSize)`` from ``bmImReshape`` with Python ints for indexing."""
     im, imDim, imSize = res[:3]
     return im, int(imDim), tuple(int(s) for s in np.ravel(imSize))
+
+
+def colon(a, b, step=1.0) -> np.ndarray:
+    """MATLAB ``a:step:b`` as a 1-D float array (endpoint included when reached)."""
+    n = int(np.floor((b - a) / step + 1e-10)) + 1
+    return a + step * np.arange(max(n, 0))
