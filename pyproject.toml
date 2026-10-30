@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "monalisa"
+version = "0.1.0.dev0"
+description = "Python port of Monalisa, the MattechLab toolbox for non-Cartesian and Cartesian MRI reconstruction"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [{ name = "MattechLab" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "numba>=0.59",
+]
+
+[project.optional-dependencies]
+io = ["h5py>=3.9", "twixtools", "ismrmrd"]
+test = ["pytest>=8", "pytest-xdist"]
+dev = ["monalisa[test]", "ruff"]
+
+[project.urls]
+Homepage = "https://github.com/MattechLab/monalisa-python"
+Upstream = "https://github.com/MattechLab/monalisa"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/monalisa"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "parity: replay of MATLAB golden calls",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "NPY"]
+ignore = ["E741", "N802", "N803", "N806"]
