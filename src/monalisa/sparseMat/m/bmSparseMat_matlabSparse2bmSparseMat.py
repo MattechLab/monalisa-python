@@ -24,7 +24,7 @@ def bmSparseMat_matlabSparse2bmSparseMat(a, N_u, d_u, kernelType, nWin, kernelPa
     b.d_u = single(d_u)
     b.kernel_type = kernelType
     b.nWin = int32(nWin)
-    b.kernelParam = single(kernelParam)
+    b.kernelParam = None if kernelParam is None else single(kernelParam)
     b.block_type = "void"
     b.type = "matlab_ind"
     b.l_squeeze_flag = False

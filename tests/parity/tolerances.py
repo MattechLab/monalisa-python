@@ -23,6 +23,10 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "bmTimeInSecond": "wall-clock time, not reproducible",
 }
 
+# Functions relying on MATLAB toolbox algorithms without an exact open equivalent
+# (validated on output quality instead of value parity):
+#   bmImDeformFieldChain_imRegDemons23 - imregdemons (Image Processing Toolbox)
+
 
 def tolerance_for(func: str) -> Tolerance:
     return TOLERANCES.get(func, Tolerance())
