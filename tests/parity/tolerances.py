@@ -21,6 +21,8 @@ TOLERANCES: dict[str, Tolerance] = {
 # to differ from MATLAB, with the reason. Keep this list short and justified.
 KNOWN_DIVERGENCES: dict[str, str] = {
     "bmTimeInSecond": "wall-clock time, not reproducible",
+    "bmCheckDir": "depends on the file system state at recording time",
+    "bmCreateDir": "depends on the file system state (and would create the recorded directories)",
 }
 
 # Functions relying on MATLAB toolbox algorithms without an exact open equivalent

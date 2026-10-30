@@ -91,3 +91,25 @@ ones, and re-port the functions whose source or recorded behaviour changed.
   reads both and merges them.
 - MATLAB `interpn(..., 'cubic')` on uniform grids is Keys cubic convolution (a = −0.5) with Keys'
   boundary extrapolation, reproduced to 6e-8 in `bmImResize`.
+- Some upstream MEX files are compiled with `-Ofast`: the Laplace kernels divide by 7 (or 5, 3) as a
+  multiplication by the float reciprocal; reproducing it brings the 1000-iteration Laplace solver
+  within 1e-5 of MATLAB.
+- Single-precision inner products over ~1e5 terms differ by ~1e-5 between MKL (MATLAB) and OpenBLAS
+  (NumPy) because of the summation order; this is the only tolerance relaxation of the solvers'
+  building blocks (`bmEuclideProd`), and the solver outputs themselves match at 1e-5.
+- MATLAB handle objects (`bmWitnessInfo`, `bmSparseMat`, readers) are mutable by design; the replay
+  skips them in its input-mutation check. Iterative solvers write witness files to the working
+  directory, so every replay runs in a temporary directory.
+- `fitgmdist` (random k-means++ start) is replaced by a deterministic EM; thresholds are rounded to
+  integers upstream, so the automatic coil-sensitivity mask is identical.
+- MATLAB's `imregdemons` (demons registration) has no exact open-source equivalent; the
+  registration wrapper needs a functional replacement validated on image quality, not on values.
+
+## Validation status (tutorial 1)
+
+| Stage | MATLAB → Python |
+|---|---|
+| Recorded function calls (all scenarios) | see `PORTING_STATUS.md` |
+| Binning masks | identical |
+| Coil sensitivity, normalization, gridded reconstructions | `tests/e2e/test_tutorial_1.py` report |
+
