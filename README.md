@@ -22,16 +22,22 @@ is validated against **golden recordings of the MATLAB implementation**; see
   steady-state detection.
 - **Coil sensitivity estimation** from body + surface coil scans (automatic mask).
 - **Binning and mitosius** (data split into bins, MATLAB-compatible v7.3 files in both directions).
+- **Iterative reconstructions**: Sensa, Steva, Sleva; chain reconstructions TevaMorphosia,
+  TevaDuoMorphosia and SensitivaMorphosia, with or without deformation matrices.
+- **Demons registration** for motion-compensated reconstructions
+  (`bmImDeformFieldChain_imRegDemons23`, `bmImDeformFieldSheet_imRegDemons23`): MATLAB's
+  `imregdemons` is replaced by SimpleITK's demons, so no MATLAB licence is needed; see
+  [docs/validation_registration.md](docs/validation_registration.md).
 - Tutorial 1 end to end: [examples/tutorial_1/tutorial_1.py](examples/tutorial_1/tutorial_1.py).
 
-The iterative reconstructions (Sensa, Steva, Sleva, Teva/Sensitiva-Morphosia) come next.
 Interactive steps of the MATLAB version (dialogs, ROI drawing) are parameters in Python; the
 MATLAB image viewers are not ported. Live status: [PORTING_STATUS.md](PORTING_STATUS.md).
 
 ## Install
 
 ```bash
-pip install -e ".[dev,io]"     # numpy, scipy, numba, h5py, twixtools, ismrmrd (+ pytest, ruff)
+pip install -e ".[io,reg]"     # numpy, scipy, numba + raw-data readers + SimpleITK (registration)
+pip install -e ".[dev,io]"     # + pytest, ruff
 ```
 
 ## Example: gridded reconstruction of a 2D radial acquisition

@@ -102,8 +102,11 @@ ones, and re-port the functions whose source or recorded behaviour changed.
   directory, so every replay runs in a temporary directory.
 - `fitgmdist` (random k-means++ start) is replaced by a deterministic EM; thresholds are rounded to
   integers upstream, so the automatic coil-sensitivity mask is identical.
-- MATLAB's `imregdemons` (demons registration) has no exact open-source equivalent; the
-  registration wrapper needs a functional replacement validated on image quality, not on values.
+- MATLAB's `imregdemons` (demons registration, Image Processing Toolbox) is replaced by SimpleITK's
+  `DemonsRegistrationFilter` (same Thirion update, thresholds and field smoothing) inside a
+  reproduction of MATLAB's multiresolution pyramid (`monalisa.imReg._demons`). The pyramid and
+  the final warp match MATLAB exactly; ITK's iterations differ in border handling and Gaussian
+  kernel, so the fields are validated on quality: [validation_registration.md](validation_registration.md).
 
 ## Validation status (tutorial 1)
 

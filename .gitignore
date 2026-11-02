@@ -10,3 +10,6 @@ dist/
 fixtures/matlab/
 fixtures/data/
 fixtures/matlab_e2e/
+fixtures/validation/
+# witness files written by the iterative solvers in the working directory
+/x_*.mat

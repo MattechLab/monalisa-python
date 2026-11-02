@@ -1,9 +1,9 @@
 # Porting status
 
-Generated 2026-10-30 by `tools/port_status.py` against upstream commit `0cb5cf9`.
+Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`.
 
 - Scope: **175 functions** of `src/` reachable from the demo pipelines (11188 code lines).
-- Ported: **133** (6099 code lines, 55 %).
+- Ported: **135** (6360 code lines, 57 %).
 - Validated against MATLAB recordings: **106**.
 
 *rel L2* is the worst relative L2 error over all recorded calls and outputs.
@@ -152,8 +152,8 @@ Generated 2026-10-30 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmImDeformField2SparseMat` | src/gridding123/m/bmImDeformField2SparseMat.m | 103 | yes | 1/1 ok | 0.0e+00 |
 | `bmImDeformField_hardThresholding2` | src/image2/m/bmImDeformField_hardThresholding2.m | 20 | yes | 2/2 ok | 0.0e+00 |
 | `bmPermuteToPoint` | src/arrayUtility/bmPermuteToPoint.m | 18 | yes | 2/2 ok | 0.0e+00 |
-| `bmImDeformFieldChain_imRegDemons23` | src/imReg/m/bmImDeformFieldChain_imRegDemons23.m | 120 |  | 2 recorded |  |
-| `bmImDeformFieldSheet_imRegDemons23` | src/imReg/m/bmImDeformFieldSheet_imRegDemons23.m | 141 |  |  |  |
+| `bmImDeformFieldChain_imRegDemons23` | src/imReg/m/bmImDeformFieldChain_imRegDemons23.m | 120 | yes | 0/2 ok (2 known div.) |  |
+| `bmImDeformFieldSheet_imRegDemons23` | src/imReg/m/bmImDeformFieldSheet_imRegDemons23.m | 141 | yes | no recording |  |
 | `bmImDeformT` | src/image123/bmImDeformT.m | 31 | yes | 5/5 ok | 0.0e+00 |
 | `bmImResize` | src/image123/bmImResize.m | 91 | yes | 4/4 ok | 6.2e-08 |
 | `bmIndex2MultiIndex` | src/arrayUtility/bmIndex2MultiIndex.m | 20 | yes | 2/2 ok | 0.0e+00 |

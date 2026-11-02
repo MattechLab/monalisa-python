@@ -19,8 +19,9 @@ dependencies = [
 
 [project.optional-dependencies]
 io = ["h5py>=3.9", "twixtools", "ismrmrd"]
+reg = ["SimpleITK>=2.3"]  # demons registration (replaces MATLAB imregdemons)
 test = ["pytest>=8", "pytest-xdist"]
-dev = ["monalisa[test]", "ruff"]
+dev = ["monalisa[test,reg]", "ruff"]
 
 [project.urls]
 Homepage = "https://github.com/MattechLab/monalisa-python"

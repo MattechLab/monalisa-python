@@ -23,11 +23,13 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "bmTimeInSecond": "wall-clock time, not reproducible",
     "bmCheckDir": "depends on the file system state at recording time",
     "bmCreateDir": "depends on the file system state (and would create the recorded directories)",
+    # MATLAB's imregdemons (Image Processing Toolbox) is replaced by SimpleITK's demons:
+    # same algorithm, fields equal in quality but not to rounding. Validated on registration
+    # quality and on the motion-compensated reconstructions: tests/validation/test_registration.py,
+    # docs/validation_registration.md.
+    "bmImDeformFieldChain_imRegDemons23": "open-source demons (SimpleITK) instead of imregdemons",
+    "bmImDeformFieldSheet_imRegDemons23": "open-source demons (SimpleITK) instead of imregdemons",
 }
-
-# Functions relying on MATLAB toolbox algorithms without an exact open equivalent
-# (validated on output quality instead of value parity):
-#   bmImDeformFieldChain_imRegDemons23 - imregdemons (Image Processing Toolbox)
 
 
 def tolerance_for(func: str) -> Tolerance:

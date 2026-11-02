@@ -16,3 +16,4 @@ unless stated otherwise; they should be reported/fixed upstream and then in both
 | `traj3/bmTraj_fullRadial3_phyllotaxis_lineAssym2.m` | With the 6-argument call, `flagExcludeSI` is undefined (MATLAB error when used). | no exclusion in that case |
 | `image123/bmImZeroFill.m` | 1D branch reads the undefined variable `u`. | raises like MATLAB |
 | `coilSense` / tutorial 1 | `bmCoilSense_nonCart_mask_automatic(y, Gn, false)` (as in the tutorial script) opens interactive windows and blocks in batch mode (`uiwait`). | `autoFlag = True` required |
+| `imReg/m/bmImDeformFieldChain_imRegDemons23.m` | With `chain_type` `'curr_to_first'` or `'first_to_curr'`, the first frame sets `v_reg = []` but then reads `tmp_im`, which is not defined yet (MATLAB error at the first frame). | first field and image are `None` |
