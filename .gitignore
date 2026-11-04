@@ -6,6 +6,7 @@ __pycache__/
 build/
 dist/
 .venv/
+.vscode/
 # MATLAB golden recordings are regenerated with tools/matlab_capture (large)
 fixtures/matlab/
 fixtures/data/
