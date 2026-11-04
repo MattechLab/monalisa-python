@@ -24,7 +24,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]" scikit-image h5py
-      - run: ruff check src tests examples tools
+      - run: ruff check src tests examples tools demo
       - run: pytest tests/unit -q
 
   parity:

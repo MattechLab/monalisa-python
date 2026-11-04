@@ -28,7 +28,8 @@ is validated against **golden recordings of the MATLAB implementation**; see
   (`bmImDeformFieldChain_imRegDemons23`, `bmImDeformFieldSheet_imRegDemons23`): MATLAB's
   `imregdemons` is replaced by SimpleITK's demons, so no MATLAB licence is needed; see
   [docs/validation_registration.md](docs/validation_registration.md).
-- Tutorial 1 end to end: [examples/tutorial_1/tutorial_1.py](examples/tutorial_1/tutorial_1.py).
+- Tutorial 1 end to end: [examples/tutorial_1/tutorial_1.ipynb](examples/tutorial_1/tutorial_1.ipynb)
+  (notebook with figures) or [tutorial_1.py](examples/tutorial_1/tutorial_1.py) (script).
 
 Interactive steps of the MATLAB version (dialogs, ROI drawing) are parameters in Python; the
 MATLAB image viewers are not ported. Live status: [PORTING_STATUS.md](PORTING_STATUS.md).
@@ -36,9 +37,27 @@ MATLAB image viewers are not ported. Live status: [PORTING_STATUS.md](PORTING_ST
 ## Install
 
 ```bash
-pip install -e ".[io,reg]"     # numpy, scipy, numba + raw-data readers + SimpleITK (registration)
-pip install -e ".[dev,io]"     # + pytest, ruff
+git clone https://github.com/MattechLab/monalisa-python.git
+cd monalisa-python
+pip install -e ".[io,reg]"            # numpy, scipy, numba + raw-data readers + SimpleITK (registration)
+pip install -e ".[io,reg,notebook]"   # + JupyterLab and matplotlib, for the tutorial notebook
+pip install -e ".[dev,io]"            # + pytest, ruff (development)
 ```
+
+The package installs as `monalisa-python` and is imported as `monalisa`.
+
+## Reading MATLAB .mat files
+
+```python
+import scipy.io as sio
+d = sio.loadmat("data.mat")        # MATLAB -v7 and older (the default of MATLAB save)
+
+from monalisa.readWrite._mat73 import loadmat73
+r = loadmat73("reconstructions.mat")   # -v7.3 (HDF5): large files, and the files written here
+```
+
+`loadmat` returns MATLAB logical arrays as `uint8`: convert masks with `.astype(bool)` before
+indexing with them.
 
 ## Example: gridded reconstruction of a 2D radial acquisition
 
@@ -55,7 +74,9 @@ x0 = ml.bmMathilda(d["y"], d["t"], ve, C, d["N_u"], d["frSize"], d["dK_u"])
 Tutorial 1 (3D radial brain scan, Siemens raw data):
 
 ```bash
-python examples/tutorial_1/tutorial_1.py --data monalisa/demo/data_demo/data_8_tutorial_1 --out results
+python demo/data_demo/data_8_tutorial_1/download_data.py   # raw data, about 7.9 GB (once)
+jupyter lab examples/tutorial_1/tutorial_1.ipynb           # or:
+python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out results
 ```
 
 ## Tests

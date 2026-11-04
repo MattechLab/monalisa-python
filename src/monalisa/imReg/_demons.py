@@ -31,7 +31,7 @@ def _sitk():
     try:
         import SimpleITK as sitk
     except ImportError as e:  # pragma: no cover - depends on the environment
-        raise ImportError("Demons registration requires SimpleITK: pip install 'monalisa[reg]'") from e
+        raise ImportError("Demons registration requires SimpleITK: pip install 'monalisa-python[reg]'") from e
     return sitk
 
 

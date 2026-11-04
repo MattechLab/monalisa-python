@@ -13,3 +13,7 @@ fixtures/matlab_e2e/
 fixtures/validation/
 # witness files written by the iterative solvers in the working directory
 /x_*.mat
+# tutorial data (download_data.py) and results
+demo/data_demo/data_8_tutorial_1/*.dat
+demo/data_demo/data_8_tutorial_1/*.part
+examples/tutorial_1/results/

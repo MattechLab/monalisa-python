@@ -3,7 +3,7 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "monalisa"
+name = "monalisa-python"
 version = "0.1.0.dev0"
 description = "Python port of Monalisa, the MattechLab toolbox for non-Cartesian and Cartesian MRI reconstruction"
 readme = "README.md"
@@ -21,7 +21,8 @@ dependencies = [
 io = ["h5py>=3.9", "twixtools", "ismrmrd"]
 reg = ["SimpleITK>=2.3"]  # demons registration (replaces MATLAB imregdemons)
 test = ["pytest>=8", "pytest-xdist"]
-dev = ["monalisa[test,reg]", "ruff"]
+notebook = ["jupyterlab", "matplotlib"]  # examples/tutorial_1/tutorial_1.ipynb
+dev = ["monalisa-python[test,reg]", "ruff"]
 
 [project.urls]
 Homepage = "https://github.com/MattechLab/monalisa-python"

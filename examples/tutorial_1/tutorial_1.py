@@ -8,9 +8,11 @@ without interactive steps:
   radius N/4 in the central slice (same rule as tools/matlab_capture/scenarios/scenario_tutorial_recon.m);
 * both binnings (all lines, sequential 5 s windows) are processed.
 
-Usage::
+The same steps, with explanations and figures: tutorial_1.ipynb in this folder.
 
-    python examples/tutorial_1/tutorial_1.py --data /path/to/data_8_tutorial_1 --out results_py
+Usage (data from demo/data_demo/data_8_tutorial_1/download_data.py)::
+
+    python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out results_py
 """
 
 from __future__ import annotations
