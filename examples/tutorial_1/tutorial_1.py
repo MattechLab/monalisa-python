@@ -1,4 +1,5 @@
-"""Monalisa tutorial 1 in Python: coil sensitivity, binning, mitosius and gridded reconstruction.
+"""Monalisa tutorial 1 in Python: coil sensitivity, binning, mitosius, gridded and iterative
+reconstructions (Sensa, TevaMorphosia).
 
 Python counterpart of demo/script_demo/script_tutorial_1/*.m (upstream), without display and
 without interactive steps:
@@ -133,6 +134,45 @@ def reconstructions(C, FoV: float, out_dir: Path, nFr: int = 8) -> dict:
     return {"x0": x0, "x1": x1}
 
 
+def iterative_reconstructions(C, FoV: float, x1: list, out_dir: Path) -> dict:
+    """Iterative SENSE (bmSensa, per bin) and compressed sensing with temporal total variation
+    (bmTevaMorphosia_chain) of the first len(x1) sequential bins, started from the gridded x1.
+    Parameters of reconstructions_script.m: 30 iterations, 4 CG steps, delta 0.1, rho 1."""
+    from monalisa.optim.bmWitnessInfo import bmWitnessInfo
+
+    nFr = len(x1)
+    N = int(FoV / 3)
+    N_u = np.array([[N, N, N]], dtype=np.float64)
+    n_u = N_u
+    dK_u = np.array([[1.0, 1.0, 1.0]]) / FoV
+    C = ml.bmImResize(C, [48, 48, 48], N_u)
+    d = str(out_dir / "mitosius_sequential")
+    y, t, ve = (ml.bmMitosius_load(d, k)[:nFr] for k in ("y", "t", "ve"))  # cells (nBin, 1)
+    Gu, Gut = ml.bmTraj2SparseMat(t, ve, N_u, dK_u, nargout=2)
+    nIter, nCGD = 30, 4
+    witness_ind = np.arange(1, nIter + 1, 3)
+    ve_max = 10 * np.prod(dK_u)
+
+    def witness(name):  # witness files go to out_dir, not the working directory
+        w = bmWitnessInfo(name, witness_ind)
+        w.out_dir = str(out_dir)
+        return w
+
+    x_sensa = [ml.bmSensa(x1[i], y[i, 0], ve[i, 0], C, Gu[i, 0], Gut[i, 0], n_u, nCGD, ve_max, nIter,
+                          witness(f"sensa_frame_{i + 1}")) for i in range(nFr)]
+    x1_cell = np.empty((nFr, 1), dtype=object)
+    for i in range(nFr):
+        x1_cell[i, 0] = x1[i]
+    delta = 0.1
+    rho = 10 * delta
+    x_cs = ml.bmTevaMorphosia_chain(x1_cell, None, None, y, ve, C, Gu, Gut, n_u, None, None, delta, rho, "normal",
+                                    nCGD, ve_max, nIter, witness("tevaMorphosia_d0p1_r1_nCGD4"))
+    x_cs = [x_cs[i, 0] for i in range(nFr)]
+    savemat73(out_dir / "iterative.mat", {**{f"x_sensa_{i + 1}": x for i, x in enumerate(x_sensa)},
+                                          **{f"x_cs_{i + 1}": x for i, x in enumerate(x_cs)}})
+    return {"x_sensa": x_sensa, "x_cs": x_cs}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--data", type=Path, required=True,
@@ -140,6 +180,8 @@ def main(argv=None):
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--coil-map", type=Path, default=None,
                     help="reuse a coil_sensitivity_map.mat (variable C)")
+    ap.add_argument("--skip-iterative", action="store_true",
+                    help="only the gridded reconstructions (no Sensa / TevaMorphosia)")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -155,7 +197,11 @@ def main(argv=None):
     savemat73(args.out / "binning.mat", {"allLinesMask": allLines, "sequentialMask": seq})
     mitosius(reader, C, {"allLines": allLines, "sequential": seq}, args.out)
     _log("reconstructions")
-    reconstructions(C, float(np.ravel(reader.acquisitionParams.FoV)[0]), args.out)
+    FoV = float(np.ravel(reader.acquisitionParams.FoV)[0])
+    rec = reconstructions(C, FoV, args.out)
+    if not args.skip_iterative:
+        _log("iterative reconstructions (Sensa, TevaMorphosia)")
+        iterative_reconstructions(C, FoV, rec["x1"], args.out)
     _log(f"done in {time.time() - t0:.0f} s")
 
 

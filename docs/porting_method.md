@@ -107,6 +107,14 @@ ones, and re-port the functions whose source or recorded behaviour changed.
   reproduction of MATLAB's multiresolution pyramid (`monalisa.imReg._demons`). The pyramid and
   the final warp match MATLAB exactly; ITK's iterations differ in border handling and Gaussian
   kernel, so the fields are validated on quality: [validation_registration.md](validation_registration.md).
+- numba 0.68: calling a `parallel=True` kernel from inside another `@njit` function crashed
+  (segmentation fault) unless the inner kernel had been compiled on its own first. Loops that call
+  parallel kernels are therefore plain Python (`laplace_solve`).
+- Speed on large 3D problems is limited by memory copies, not by the FFTs: shifting all axes at
+  once around the 1-D FFTs, a complex sparse product without real/imaginary copies, and `mixed`
+  computing in double by chunks (no full-size double temporaries) gave 2.3× (Sensa) and 1.4×
+  (TevaMorphosia) with bit-identical results. The remaining cost is flattening row-major arrays
+  in column-major order; keeping the data column-major throughout would remove it.
 
 ## Validation status (tutorial 1)
 
@@ -115,4 +123,10 @@ ones, and re-port the functions whose source or recorded behaviour changed.
 | Recorded function calls (all scenarios) | see `PORTING_STATUS.md` |
 | Binning masks | identical |
 | Coil sensitivity, normalization, gridded reconstructions | `tests/e2e/test_tutorial_1.py` report |
+| Gridded reconstructions `x0`, `x1` (80³, 42 coils) | rel L2 ≈ 4e-5 |
+| Iterative SENSE `bmSensa`, 8 bins × 30 iterations | rel L2 6–8e-5 |
+| Compressed sensing `bmTevaMorphosia_chain`, 8 bins × 30 iterations | rel L2 6e-5 |
+
+MATLAB references of the iterative reconstructions: `tools/matlab_capture/validation/tutorial_1_iterative_reference.m`
+(from the MATLAB outputs of `scenario_tutorial_recon`).
 

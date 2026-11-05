@@ -1,7 +1,8 @@
 """End-to-end comparison of tutorial 1 (Python port vs MATLAB).
 
 Opt-in (slow, needs the tutorial raw data and the MATLAB outputs of
-tools/matlab_capture/scenarios/scenario_tutorial_recon.m):
+tools/matlab_capture/scenarios/scenario_tutorial_recon.m, and for the iterative reconstructions
+tools/matlab_capture/validation/tutorial_1_iterative_reference.m):
 
     MONALISA_E2E_DATA=/path/to/data_8_tutorial_1 pytest tests/e2e -s
 
@@ -88,3 +89,16 @@ def test_gridded_reconstructions(py_dir):
         REPORT[f"x1_frame_{i + 1}"] = summary(py[f"x1_{i + 1}"], x1.flat[i])
     worst = max(v["rel_l2"] for k, v in REPORT.items() if k.startswith("x"))
     assert worst < 1e-3
+
+
+@pytest.mark.skipif(not (ML_DIR / "iterative.mat").exists(),
+                    reason="run tools/matlab_capture/validation/tutorial_1_iterative_reference.m first")
+def test_iterative_reconstructions(py_dir):
+    """Sensa and TevaMorphosia_chain on the first 8 sequential bins (reconstructions_script.m)."""
+    ml = loadmat73(ML_DIR / "iterative.mat")
+    py = loadmat73(py_dir / "iterative.mat")
+    for name in ("x_sensa", "x_cs"):
+        for i in range(ml[name].size):
+            REPORT[f"{name}_frame_{i + 1}"] = summary(py[f"{name}_{i + 1}"], ml[name].flat[i])
+        worst = max(v["rel_l2"] for k, v in REPORT.items() if k.startswith(name + "_frame"))
+        assert worst < 1e-3, name
