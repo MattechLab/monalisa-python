@@ -40,8 +40,10 @@ def clamp(x, m, c):
             x[i] = c[i]
 
 
-@numba.njit(cache=True)
 def laplace_solve(imStart, m, nIter, off):
+    # Plain Python loop over the compiled kernels: calling the parallel cross_mean from inside an
+    # njit function crashed (segmentation fault) with numba 0.68 when it had not been compiled
+    # on its own first. Same kernels, same results.
     out = imStart.copy()
     out2 = imStart.copy()
     for _ in range(int(np.ceil(nIter / 2.0))):

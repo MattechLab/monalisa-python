@@ -169,6 +169,14 @@ def mixed(op, a, b):
     operand to float32 first. ``mixed`` reproduces MATLAB.
     """
     single_out = is_single(a) or is_single(b)
+    a, b = np.asarray(a), np.asarray(b)
+    if single_out and isinstance(op, np.ufunc) and a.ndim + b.ndim > 0:
+        # same values as single(op(double(a), double(b))): the ufunc computes in double, in
+        # buffered chunks, and rounds into the single output without full-size double temporaries
+        cplx = np.iscomplexobj(a) or np.iscomplexobj(b)
+        out = np.empty(np.broadcast_shapes(a.shape, b.shape), dtype=np.complex64 if cplx else np.float32)
+        op(a, b, out=out, dtype=np.complex128 if cplx else np.float64, casting="unsafe")
+        return out
     res = op(double(a), double(b))
     return single(res) if single_out else res
 

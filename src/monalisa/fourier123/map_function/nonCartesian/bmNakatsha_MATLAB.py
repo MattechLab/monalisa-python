@@ -6,6 +6,7 @@ import scipy.fft
 from monalisa._mat import double, int32, isempty, msize, vec
 from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
 from monalisa.arrayUtility.bmColReshape import bmColReshape
+from monalisa.fourier123.map_function.nonCartesian._centered_fft import centered_fft
 from monalisa.image123.bmImCrope import bmImCrope
 from monalisa.sparseMat.m.bmSparseMat_vec import bmSparseMat_vec
 
@@ -29,8 +30,7 @@ def bmNakatsha_MATLAB(y, G, KFC_conj, C_flag, n_u):
     _check(y, G, KFC_conj, C_flag, N_u, n_u, nPt, nCh)
     x = bmSparseMat_vec(G, y, "omp", "complex", False)
     x = bmBlockReshape(x, N_u)
-    for n in range(min(imDim, 3)):
-        x = scipy.fft.fftshift(scipy.fft.ifft(scipy.fft.ifftshift(x, axes=n), axis=n, workers=-1), axes=n)
+    x = centered_fft(x, min(imDim, 3), scipy.fft.ifft)
     x = bmColReshape(x, N_u)
     if not np.array_equal(N_u, n_u):
         x = bmBlockReshape(x, N_u)

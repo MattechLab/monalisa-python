@@ -3,13 +3,20 @@
 import numpy as np
 
 from monalisa._mat import disp, isempty
-from monalisa.sparseMat.mex._sparse_vec import csr_matvec
+from monalisa.sparseMat.mex._sparse_vec import csr_matvec, csr_matvec_complex
 
 
 def _matvec(s, V):
     row_of, row_start, cols, vals = s.csr()
     W = np.zeros((int(s.l_size), V.shape[1]), dtype=np.float32)
     csr_matvec(row_of, row_start, cols, vals, np.ascontiguousarray(V, dtype=np.float32), W)
+    return W
+
+
+def _matvec_complex(s, V):
+    row_of, row_start, cols, vals = s.csr()
+    W = np.zeros((int(s.l_size), V.shape[1]), dtype=np.complex64)
+    csr_matvec_complex(row_of, row_start, cols, vals, V, W)
     return W
 
 
@@ -76,6 +83,8 @@ def bmSparseMat_vec(s, v, *varargin):
 
     if R_flag:
         W = _matvec(s, np.real(V))
+    elif V.dtype == np.complex64:
+        W = _matvec_complex(s, V)  # same values as the two real products below, without copies
     else:
         W = _matvec(s, np.real(V)) + 1j * _matvec(s, np.imag(V)).astype(np.complex64)
         W = W.astype(np.complex64)

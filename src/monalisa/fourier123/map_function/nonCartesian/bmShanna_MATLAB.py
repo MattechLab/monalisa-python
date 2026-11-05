@@ -6,6 +6,7 @@ import scipy.fft
 from monalisa._mat import double, int32, isempty, msize, vec
 from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
 from monalisa.arrayUtility.bmColReshape import bmColReshape
+from monalisa.fourier123.map_function.nonCartesian._centered_fft import centered_fft
 from monalisa.image123.bmImZeroFill import bmImZeroFill
 from monalisa.sparseMat.m.bmSparseMat_vec import bmSparseMat_vec
 
@@ -32,8 +33,7 @@ def bmShanna_MATLAB(x, G, KFC, n_u):
         x = bmImZeroFill(x, N_u, n_u, "complex_single")
         x = bmColReshape(x, N_u)
     x = bmBlockReshape(x, N_u)
-    for n in range(min(imDim, 3)):
-        x = scipy.fft.fftshift(scipy.fft.fft(scipy.fft.ifftshift(x, axes=n), axis=n, workers=-1), axes=n)
+    x = centered_fft(x, min(imDim, 3), scipy.fft.fft)
     x = bmColReshape(x, N_u)
     return bmSparseMat_vec(G, x, "omp", "complex", False)
 
