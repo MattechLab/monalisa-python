@@ -5,6 +5,7 @@ import numpy as np
 from monalisa._mat import squeeze
 from monalisa.fourierN.bmIDF import bmIDF
 from monalisa.mriRecon.class_.bmMriAcquisitionParam import bmMriAcquisitionParam
+from monalisa.rawDataReader.checkMetadataInteractive import checkMetadataInteractive
 from monalisa.rawDataReader.ismrmrd._mrd import fov, read_mrd, readouts
 
 
@@ -17,7 +18,8 @@ def dhIsmrmrdReadMetaData(obj, nargout=1):
     """Acquisition parameters of an ISMRMRD file (counts from the acquisition
     headers, FoV = 2 x encoded FoV of the XML header, ``nShot_off`` estimated
     from the self-navigation signal). Returns the parameters or
-    ``(parameters, reconFoV)``. ``obj.autoFlag`` must be true in Python."""
+    ``(parameters, reconFoV)``. With ``obj.autoFlag`` false the parameters are shown
+    for checking (checkMetadataInteractive)."""
     head, data, xml = read_mrd(obj.argFile)
     node = bmMriAcquisitionParam(None)
     node.timestamp = np.asarray(head["acquisition_time_stamp"])[:, None]
@@ -50,13 +52,12 @@ def dhIsmrmrdReadMetaData(obj, nargout=1):
     mySI = mySI / np.max(mySI)
     x_SI = np.tile(np.arange(1, mySI.shape[0] + 1, dtype=np.float64)[:, None], (1, mySI.shape[1]))
     s_mean = np.mean(x_SI * mySI, axis=0, keepdims=True)
+    s_center_mass = np.sum(x_SI * mySI, axis=0, keepdims=True) / np.sum(mySI, axis=0, keepdims=True)
     running_std = _movstd_discard(s_mean, 5)
     threshold = np.percentile(running_std, 15, method="hazen")
     node.nShot_off = float(np.flatnonzero(np.ravel(running_std) < threshold)[0] + 1)
     node.selfNav_flag = True
     node.roosk_flag = False
     if not obj.autoFlag:
-        raise NotImplementedError(
-            "Interactive metadata correction is not available in Python: use autoFlag=True"
-        )
+        node, reconFoV = checkMetadataInteractive(mySI, s_mean, s_center_mass, node, reconFoV)
     return (node, reconFoV) if nargout >= 2 else node

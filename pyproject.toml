@@ -15,13 +15,16 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
     "numba>=0.59",
+    "matplotlib>=3.7",
+    "napari[all]>=0.5",  # bmImage viewer and Qt for the interactive dialogs (autoFlag=false)
+    "ipywidgets>=8",  # bmImage in Jupyter notebooks
 ]
 
 [project.optional-dependencies]
 io = ["h5py>=3.9", "twixtools", "ismrmrd"]
 reg = ["SimpleITK>=2.3"]  # demons registration (replaces MATLAB imregdemons)
-test = ["pytest>=8", "pytest-xdist"]
-notebook = ["jupyterlab", "matplotlib"]  # examples/tutorial_1/tutorial_1.ipynb
+test = ["pytest>=8", "pytest-xdist", "pytest-qt"]
+notebook = ["jupyterlab"]  # examples/tutorial_1/tutorial_1.ipynb
 dev = ["monalisa-python[test,reg]", "ruff"]
 
 [project.urls]

@@ -1,13 +1,17 @@
 """Monalisa tutorial 1 in Python: coil sensitivity, binning, mitosius, gridded and iterative
 reconstructions (Sensa, TevaMorphosia).
 
-Python counterpart of demo/script_demo/script_tutorial_1/*.m (upstream), without display and
-without interactive steps:
+Python counterpart of demo/script_demo/script_tutorial_1/*.m (upstream). By default it runs
+without windows, reproducibly:
 
-* raw data readers use ``autoFlag=True`` (no metadata dialogs);
+* raw data readers and the coil mask use ``autoFlag=True`` (automatic metadata, thresholds, box);
 * the normalization ROI drawn with ``roipoly`` in MATLAB is replaced by a centered disk of
   radius N/4 in the central slice (same rule as tools/matlab_capture/scenarios/scenario_tutorial_recon.m);
 * both binnings (all lines, sequential 5 s windows) are processed.
+
+With ``--interactive`` it behaves like the MATLAB scripts: ``autoFlag=False`` (metadata and
+coil-mask windows), the normalization ROI is drawn with ``roipoly`` on the central slice, and the
+reconstructions are shown with ``bmImage`` at the end.
 
 The same steps, with explanations and figures: tutorial_1.ipynb in this folder.
 
@@ -32,10 +36,10 @@ def _log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
-def coil_sensitivity(data_dir: Path, out_dir: Path) -> np.ndarray:
+def coil_sensitivity(data_dir: Path, out_dir: Path, interactive: bool = False) -> np.ndarray:
     """Coil sensitivity maps C (48^3 x nCh) from the body and surface coil scans."""
-    body = ml.createRawDataReader(data_dir / "bodyCoil.dat", True)
-    head = ml.createRawDataReader(data_dir / "surfaceCoil.dat", True)
+    body = ml.createRawDataReader(data_dir / "bodyCoil.dat", not interactive)
+    head = ml.createRawDataReader(data_dir / "surfaceCoil.dat", not interactive)
     nShotOff = max(body.acquisitionParams.nShot_off, head.acquisitionParams.nShot_off)
     for r in (body, head):
         r.acquisitionParams.nShot_off = nShotOff
@@ -45,7 +49,7 @@ def coil_sensitivity(data_dir: Path, out_dir: Path) -> np.ndarray:
     y_body, t, ve = ml.bmCoilSense_nonCart_data(body, N_u)
     y_surface = ml.bmCoilSense_nonCart_data(head, N_u, nargout=1)
     Gn, Gu, Gut = ml.bmTraj2SparseMat(t, ve, N_u, dK_u)
-    mask = ml.bmCoilSense_nonCart_mask_automatic(y_body, Gn, True)
+    mask = ml.bmCoilSense_nonCart_mask_automatic(y_body, Gn, not interactive)
     y_ref, C_ref = ml.bmCoilSense_nonCart_ref(y_body, Gn, mask, None)
     C_prime = ml.bmCoilSense_nonCart_primary(y_surface, y_ref, C_ref, Gn, ve, mask)
     C = ml.bmCoilSense_nonCart_secondary(y_surface, C_prime, y_ref, C_ref, Gn, Gu, Gut, ve, 5, False)
@@ -87,7 +91,7 @@ def _normalization(x_tot, N):
     return np.mean(temp_im[roi])
 
 
-def mitosius(reader, C, masks: dict, out_dir: Path) -> dict:
+def mitosius(reader, C, masks: dict, out_dir: Path, interactive: bool = False) -> dict:
     """Normalize the raw data and write one mitosius folder per binning."""
     p = reader.acquisitionParams
     p.traj_type = "full_radial3_phylotaxis"
@@ -101,7 +105,11 @@ def mitosius(reader, C, masks: dict, out_dir: Path) -> dict:
     C = ml.bmImResize(C, [48, 48, 48], N_u)
     _log("gridded reconstruction for normalization")
     x_tot = ml.bmMathilda(y_tot, t_tot, ve_tot, C, N_u, N_u, np.array([[1.0, 1.0, 1.0]]) / 384)
-    normalize_val = _normalization(x_tot, N)
+    if interactive:  # mitosius_script.m: draw the ROI on a slice of x_tot
+        temp_im = np.abs(x_tot[:, :, N // 2])
+        normalize_val = np.mean(temp_im[ml.roipoly(temp_im)])
+    else:
+        normalize_val = _normalization(x_tot, N)
     y_tot = y_tot / normalize_val  # single / single, as in MATLAB
     savemat73(out_dir / "mitosius_prep.mat", {"x_tot": x_tot, "normalize_val": np.float32(normalize_val),
                                               "ve_tot": ve_tot})
@@ -182,6 +190,8 @@ def main(argv=None):
                     help="reuse a coil_sensitivity_map.mat (variable C)")
     ap.add_argument("--skip-iterative", action="store_true",
                     help="only the gridded reconstructions (no Sensa / TevaMorphosia)")
+    ap.add_argument("--interactive", action="store_true",
+                    help="windows as in the MATLAB scripts (autoFlag=false, roipoly, bmImage)")
     args = ap.parse_args(argv)
     args.out.mkdir(parents=True, exist_ok=True)
 
@@ -190,19 +200,26 @@ def main(argv=None):
         C = loadmat73(args.coil_map)["C"]
     else:
         _log("coil sensitivity")
-        C = coil_sensitivity(args.data, args.out)
+        C = coil_sensitivity(args.data, args.out, args.interactive)
     _log("binnings")
-    reader = ml.createRawDataReader(args.data / "brainScan.dat", True)
+    reader = ml.createRawDataReader(args.data / "brainScan.dat", not args.interactive)
     allLines, seq = binnings(reader)
     savemat73(args.out / "binning.mat", {"allLinesMask": allLines, "sequentialMask": seq})
-    mitosius(reader, C, {"allLines": allLines, "sequential": seq}, args.out)
+    mitosius(reader, C, {"allLines": allLines, "sequential": seq}, args.out, args.interactive)
     _log("reconstructions")
     FoV = float(np.ravel(reader.acquisitionParams.FoV)[0])
     rec = reconstructions(C, FoV, args.out)
+    it = None
     if not args.skip_iterative:
         _log("iterative reconstructions (Sensa, TevaMorphosia)")
-        iterative_reconstructions(C, FoV, rec["x1"], args.out)
+        it = iterative_reconstructions(C, FoV, rec["x1"], args.out)
     _log(f"done in {time.time() - t0:.0f} s")
+    if args.interactive:  # reconstructions_script.m: bmImage(x0), bmImage(x1), ...
+        ml.bmImage(rec["x0"], name="x0")
+        ml.bmImage(rec["x1"], name="x1", block=it is None)
+        if it is not None:
+            ml.bmImage(it["x_sensa"], name="x_sensa")
+            ml.bmImage(it["x_cs"], name="x_cs", block=True)
 
 
 if __name__ == "__main__":

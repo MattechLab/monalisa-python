@@ -25,8 +25,11 @@ added on top later without changing these modules.
   the Python function takes a keyword `nargout` (e.g. `bmTraj_nLine(t, nargout=4)`) and returns
   exactly that many values (a single value when `nargout == 1`).
 - Functions never modify their input arrays (MATLAB passes by value). The replay test checks it.
-- Interactive steps (`roipoly`, `questdlg`, `inputdlg`, metadata dialogs) are replaced by
-  parameters. Display functions are out of scope for the faithful layer.
+- Interactive steps (`autoFlag = false`: metadata dialogs, coil-mask thresholds and box) are Qt
+  dialogs (`qtpy`, matplotlib canvases) that return the same values as MATLAB, and every one has
+  a parameter that skips it. The Qt classes live in private modules (`_metadata_dialog.py`),
+  built on first use, so that importing a function never needs a display. The image viewers
+  (`bmImage`) are replaced by napari rather than ported line by line.
 - Progress messages printed by MATLAB (`disp`) are printed through `monalisa._mat.disp`.
 
 ## Arrays

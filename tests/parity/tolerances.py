@@ -25,7 +25,7 @@ KNOWN_DIVERGENCES: dict[str, str] = {
     "bmCreateDir": "depends on the file system state (and would create the recorded directories)",
     # MATLAB's imregdemons (Image Processing Toolbox) is replaced by SimpleITK's demons:
     # same algorithm, fields equal in quality but not to rounding. Validated on registration
-    # quality and on the motion-compensated reconstructions: tests/validation/test_registration.py,
+    # quality and on the motion-compensated reconstructions: tests/validation/test_registration_vs_matlab.py,
     # docs/validation_registration.md.
     "bmImDeformFieldChain_imRegDemons23": "open-source demons (SimpleITK) instead of imregdemons",
     "bmImDeformFieldSheet_imRegDemons23": "open-source demons (SimpleITK) instead of imregdemons",

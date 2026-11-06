@@ -1,4 +1,4 @@
-"""Port of src/coilSense/automatic/thresholdRMS_MIP.m (automatic mode)."""
+"""Port of src/coilSense/automatic/thresholdRMS_MIP.m."""
 
 import numpy as np
 from scipy.optimize import brentq
@@ -70,13 +70,23 @@ def _detectThreshold_GMM2(data):
 def thresholdRMS_MIP(colorMax, dataRMS, dataMIP, N_u, autoFlag):
     """Thresholds ``(thRMS, thMIP)`` separating background from object in the
     RMS and MIP images (crossing of a two-Gaussian fit of their histograms).
-    Only the automatic mode exists in Python."""
+
+    With ``autoFlag`` false a window shows the fraction of voxels above each value with the two
+    thresholds as draggable lines, and a slice of the thresholded RMS and MIP images (scroll to
+    change slice, menu for the view, "Contrast" for the binary mask). Confirm returns the chosen
+    thresholds; closing the window returns the automatic ones."""
     dataRMS = single(bmBlockReshape(dataRMS, N_u))
     dataMIP = single(bmBlockReshape(dataMIP, N_u))
     thRMS = _detectThreshold_GMM2(dataRMS)
     thMIP = _detectThreshold_GMM2(dataMIP)
-    if not autoFlag:
-        raise NotImplementedError(
-            "Interactive threshold selection is not available in Python; use autoFlag=True"
-        )
+    if autoFlag:
+        return thRMS, thMIP
+    from monalisa._mat import disp
+    from monalisa.coilSense.automatic._threshold_dialog import dialog_class
+    from monalisa.imDisp._qt import run_dialog
+
+    dlg = dialog_class()(colorMax, dataRMS, dataMIP, thRMS, thMIP)
+    if run_dialog(dlg):
+        thRMS, thMIP = dlg.th["RMS"], dlg.th["MIP"]
+        disp(f"thresholdRMS_MIP: th_RMS = {thRMS:g}, th_MIP = {thMIP:g}")
     return thRMS, thMIP

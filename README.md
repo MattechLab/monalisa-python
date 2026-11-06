@@ -31,20 +31,46 @@ is validated against **golden recordings of the MATLAB implementation**; see
 - Tutorial 1 end to end: [examples/tutorial_1/tutorial_1.ipynb](examples/tutorial_1/tutorial_1.ipynb)
   (notebook with figures) or [tutorial_1.py](examples/tutorial_1/tutorial_1.py) (script).
 
-Interactive steps of the MATLAB version (dialogs, ROI drawing) are parameters in Python; the
-MATLAB image viewers are not ported. Live status: [PORTING_STATUS.md](PORTING_STATUS.md).
+- Image viewer and interactive steps: see below.
+
+Live status: [PORTING_STATUS.md](PORTING_STATUS.md).
 
 ## Install
 
 ```bash
 git clone https://github.com/MattechLab/monalisa-python.git
 cd monalisa-python
-pip install -e ".[io,reg]"            # numpy, scipy, numba + raw-data readers + SimpleITK (registration)
-pip install -e ".[io,reg,notebook]"   # + JupyterLab and matplotlib, for the tutorial notebook
+pip install -e ".[io,reg]"            # numpy, scipy, numba, napari + raw-data readers + SimpleITK (registration)
+pip install -e ".[io,reg,notebook]"   # + JupyterLab, for the tutorial notebook
 pip install -e ".[dev,io]"            # + pytest, ruff (development)
 ```
 
 The package installs as `monalisa-python` and is imported as `monalisa`.
+
+## Viewing images and interactive steps
+
+`bmImage` shows 2D to 5D images (or a list of frames) like the MATLAB viewer, with the MATLAB
+axis order: `x(:, :, k)` with x down the rows, and sliders for z and time. Outside Jupyter it opens
+a [napari](https://napari.org) window (views along x/y/z, contrast, 3D rendering, points);
+inside Jupyter it shows sliders under the cell (`backend="napari"` opens the window instead).
+
+```python
+import monalisa as ml
+ml.bmImage(x_cs)                 # list of 3D frames -> x, y, z, t
+ml.bmImage(x0, block=True)       # in a script: keep the window open until closed (or napari.run())
+mask = ml.roipoly(x0[:, :, 40])  # draw a polygon, like MATLAB roipoly
+```
+
+As in MATLAB, `autoFlag=False` opens windows where the automatic choices can be checked and
+changed: the acquisition parameters (raw data readers), the coil-mask thresholds and the bounding
+box (`bmCoilSense_nonCart_mask_automatic`). Every value chosen in a window is printed and can be
+set in the code instead, which needs no window and is reproducible:
+
+| Window | Set it in the code |
+|---|---|
+| metadata check (`createRawDataReader(f, False)`) | `createRawDataReader(f, True)`, then `reader.acquisitionParams.nShot_off = 14` (any field) |
+| coil-mask thresholds and box | `bmCoilSense_nonCart_mask_automatic(y, Gn, True, th_RMS, th_MIP, borders)` |
+| normalization ROI (`roipoly(im)`) | `roipoly(im, c, r)` with the printed vertices, or any boolean mask |
 
 ## Reading MATLAB .mat files
 

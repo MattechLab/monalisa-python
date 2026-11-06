@@ -5,6 +5,8 @@ import numpy as np
 from monalisa._mat import squeeze
 from monalisa.fourierN.bmIDF import bmIDF
 from monalisa.mriRecon.class_.bmMriAcquisitionParam import bmMriAcquisitionParam
+from monalisa.rawDataReader.checkMetadataInteractive import checkMetadataInteractive
+from monalisa.rawDataReader.correctMetadataInteractive import correctMetadataInteractive
 from monalisa.rawDataReader.siemens._twix import read_twix
 
 # Header fields probed for the field of view, in MATLAB's order (the last found wins).
@@ -35,10 +37,11 @@ def dhSiemensReadMetaData(obj, nargout=1):
     """Acquisition parameters of a Siemens file.
 
     The number of non steady-state shots ``nShot_off`` is estimated from the
-    self-navigation signal. ``obj.autoFlag`` must be true: the interactive
-    correction dialogs of MATLAB are not available (set the parameters on the
-    returned object instead). Returns the parameters, or
-    ``(parameters, reconFoV)`` for ``nargout=2``.
+    self-navigation signal. When ``obj.autoFlag`` is false, or the FoV is not in
+    the header, the parameters are shown for correction (correctMetadataInteractive,
+    then checkMetadataInteractive with the self-navigation plot); with
+    ``autoFlag=True`` set the fields of the returned object in the code instead.
+    Returns the parameters, or ``(parameters, reconFoV)`` for ``nargout=2``.
     """
     myTwix = read_twix(obj.argFile)
     img = myTwix.image
@@ -61,16 +64,13 @@ def dhSiemensReadMetaData(obj, nargout=1):
     node.roosk_flag = False
     interactive = (not obj.autoFlag) or np.array_equal(np.ravel(reconFoV), [-1, -1, -1])
     if interactive:
-        raise NotImplementedError(
-            "Interactive metadata correction is not available in Python: use autoFlag=True "
-            "(and a file with a readable FoV)."
-        )
+        node, reconFoV = correctMetadataInteractive(node, reconFoV)
 
     if nEcho != 1:
         raise NotImplementedError("bmTwix_data : nEcho > 1, case not implemented, yet ")
     y_raw = np.transpose(img.unsorted(), (1, 0, 2))
     node.nCh = np.float64(y_raw.shape[0])
-    y_raw = np.reshape(y_raw, (int(node.nCh), int(N), int(nSeg), int(nShot)), order="F")
+    y_raw = np.reshape(y_raw, (int(node.nCh), int(node.N), int(node.nSeg), int(node.nShot)), order="F")
 
     mySI = squeeze(y_raw[:, :, 0:1, :])
     mySI = bmIDF(mySI, 1, None, 2)
@@ -80,9 +80,12 @@ def dhSiemensReadMetaData(obj, nargout=1):
     x_SI = np.tile(np.arange(1, mySI.shape[0] + 1, dtype=np.float64)[:, None], (1, mySI.shape[1]))
     prod = (x_SI * mySI).astype(mySI.dtype)  # double .* single -> single
     s_mean = np.mean(prod, axis=0, keepdims=True)
+    s_center_mass = np.sum(prod, axis=0, keepdims=True) / np.sum(mySI, axis=0, keepdims=True)
     running_std = _movstd_discard(s_mean, 5)
     threshold = np.percentile(running_std, 15, method="hazen")
     node.nShot_off = np.float64(np.flatnonzero(np.ravel(running_std) < threshold)[0] + 1)
+    if interactive:
+        node, reconFoV = checkMetadataInteractive(mySI, s_mean, s_center_mass, node, reconFoV)
     if nargout >= 2:
         return node, reconFoV
     return node

@@ -1,9 +1,9 @@
 # Porting status
 
-Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`.
+Generated 2026-11-06 by `tools/port_status.py` against upstream commit `0cb5cf9`.
 
 - Scope: **175 functions** of `src/` reachable from the demo pipelines (11188 code lines).
-- Ported: **135** (6360 code lines, 57 %).
+- Ported: **139** (6989 code lines, 62 %).
 - Validated against MATLAB recordings: **106**.
 
 *rel L2* is the worst relative L2 error over all recorded calls and outputs.
@@ -12,13 +12,13 @@ Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`
 |---|---|---:|:---:|---|---:|
 | `bmIDF` | src/fourierN/bmIDF.m | 165 | yes | 5/5 ok | 9.7e-08 |
 | `bmMriAcquisitionParam` | src/mriRecon/class/bmMriAcquisitionParam.m | 62 | yes | no recording |  |
-| `checkMetadataInteractive` | src/rawDataReader/checkMetadataInteractive.m | 163 |  |  |  |
+| `checkMetadataInteractive` | src/rawDataReader/checkMetadataInteractive.m | 163 | yes | no recording |  |
 | `dhIsmrmrdReadMetaData` | src/rawDataReader/ismrmrd/dhIsmrmrdReadMetaData.m | 76 | yes | 1/1 ok | 0.0e+00 |
 | `dhIsmrmrdReadRawData` | src/rawDataReader/ismrmrd/dhIsmrmrdReadRawData.m | 39 | yes | 2/2 ok | 0.0e+00 |
 | `mleRawDataReader` | src/rawDataReader/mleRawDataReader.m | 20 | yes | no recording |  |
 | `mleIsmrmrdReader` | src/rawDataReader/ismrmrd/mleIsmrmrdReader.m | 19 | yes | no recording |  |
 | `bmSiemensReadRawData` | src/rawDataReader/siemens/bmSiemensReadRawData.m | 34 | yes | 2/2 ok | 0.0e+00 |
-| `correctMetadataInteractive` | src/rawDataReader/correctMetadataInteractive.m | 108 |  |  |  |
+| `correctMetadataInteractive` | src/rawDataReader/correctMetadataInteractive.m | 108 | yes | no recording |  |
 | `dhSiemensReadMetaData` | src/rawDataReader/siemens/dhSiemensReadMetaData.m | 107 | yes | 4/4 ok | 0.0e+00 |
 | `mleSiemensReader` | src/rawDataReader/siemens/mleSiemensReader.m | 19 | yes | no recording |  |
 | `createRawDataReader` | src/rawDataReader/createRawDataReader.m | 11 | yes | 6/6 ok | inf |
@@ -87,7 +87,7 @@ Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmImage3` | src/imDisp/bmImage3.m | 651 |  |  |  |
 | `bmImage4` | src/imDisp/bmImage4.m | 595 |  |  |  |
 | `bmImage5` | src/imDisp/bmImage5.m | 618 |  |  |  |
-| `bmImage` | src/imDisp/bmImage.m | 25 |  |  |  |
+| `bmImage` | src/imDisp/bmImage.m | 25 | yes | no recording |  |
 | `bmImShiftList` | src/image123/bmImShiftList.m | 52 |  |  |  |
 | `bmColReshape` | src/arrayUtility/bmColReshape.m | 12 | yes | 20/20 ok | 0.0e+00 |
 | `bmIsBlockShape` | src/arrayUtility/bmIsBlockShape.m | 10 | yes | 14/14 ok | 0.0e+00 |
@@ -107,7 +107,7 @@ Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmNasha` | src/fourier123/map_function/nonCartesian/bmNasha.m | 94 | yes | 5/5 ok | 5.3e-07 |
 | `bmRMS` | src/imageN/bmRMS.m | 9 | yes | 4/4 ok | 4.9e-08 |
 | `detectROI` | src/coilSense/automatic/detectROI.m | 37 | yes | 4/4 ok | 0.0e+00 |
-| `selectROI` | src/coilSense/automatic/selectROI.m | 333 |  |  |  |
+| `selectROI` | src/coilSense/automatic/selectROI.m | 333 | yes | no recording |  |
 | `thresholdRMS_MIP` | src/coilSense/automatic/thresholdRMS_MIP.m | 182 | yes | 2/2 ok | 0.0e+00 |
 | `bmCoilSense_nonCart_mask_automatic` | src/coilSense/nonCart/bmCoilSense_nonCart_mask_automatic.m | 84 | yes | 1/1 ok | 0.0e+00 |
 | `bmImLaplaceIterator` | src/image123/bmImLaplaceIterator.m | 83 | yes | 6/6 ok | 5.8e-07 |
@@ -123,8 +123,8 @@ Generated 2026-11-02 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmKF_conj` | src/fourier123/prep_function/bmKF_conj.m | 21 | yes | 7/7 ok | 0.0e+00 |
 | `bmNakatsha_CUFFT_omp` | src/fourier123/map_function/nonCartesian/bmNakatsha_CUFFT_omp.m | 58 |  |  |  |
 | `bmNakatsha_FFTW_omp` | src/fourier123/map_function/nonCartesian/bmNakatsha_FFTW_omp.m | 58 |  |  |  |
-| `bmNakatsha_MATLAB` | src/fourier123/map_function/nonCartesian/bmNakatsha_MATLAB.m | 61 | yes | 8/8 ok | 1.6e-07 |
-| `bmNakatsha` | src/fourier123/map_function/nonCartesian/bmNakatsha.m | 24 | yes | 8/8 ok | 1.6e-07 |
+| `bmNakatsha_MATLAB` | src/fourier123/map_function/nonCartesian/bmNakatsha_MATLAB.m | 61 | yes | 8/8 ok | 1.9e-07 |
+| `bmNakatsha` | src/fourier123/map_function/nonCartesian/bmNakatsha.m | 24 | yes | 8/8 ok | 1.9e-07 |
 | `bmShanna_CUFFT_omp` | src/fourier123/map_function/nonCartesian/bmShanna_CUFFT_omp.m | 57 |  |  |  |
 | `bmShanna_FFTW_omp` | src/fourier123/map_function/nonCartesian/bmShanna_FFTW_omp.m | 57 |  |  |  |
 | `bmImZeroFill` | src/image123/bmImZeroFill.m | 41 | yes | no recording |  |

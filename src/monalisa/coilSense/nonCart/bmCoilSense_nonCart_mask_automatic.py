@@ -5,6 +5,7 @@ import numpy as np
 from monalisa._mat import isempty, vec
 from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
 from monalisa.coilSense.automatic.detectROI import detectROI
+from monalisa.coilSense.automatic.selectROI import selectROI
 from monalisa.coilSense.automatic.thresholdRMS_MIP import thresholdRMS_MIP
 from monalisa.fourier123.map_function.nonCartesian.bmNasha import bmNasha
 from monalisa.imageN.bmMIP import bmMIP
@@ -15,10 +16,12 @@ def bmCoilSense_nonCart_mask_automatic(y, Gn, autoFlag, th_RMS=None, th_MIP=None
                                        open_size=None, close_size=None):
     """Mask of the object for coil sensitivity estimation, from thresholds of
     the RMS and MIP over channels of the gridded images, cut to a bounding box.
-    ``autoFlag`` must be true in Python (no interactive selection)."""
+
+    With ``autoFlag`` false the thresholds (thresholdRMS_MIP) and the bounding box (selectROI) are
+    chosen in windows, starting from the automatic values, and the RMS, MIP and masked images are
+    shown (bmImage). The chosen values are printed; passing them as ``th_RMS``, ``th_MIP`` and
+    ``borders`` reproduces the mask without windows."""
     colorMax = 100
-    if not autoFlag:
-        raise NotImplementedError("Interactive ROI selection is not available in Python; use autoFlag=True")
     N_u = vec(Gn.N_u)
     imDim = N_u.size
     x = bmBlockReshape(bmNasha(y, Gn, N_u), N_u)
@@ -37,7 +40,14 @@ def bmCoilSense_nonCart_mask_automatic(y, Gn, autoFlag, th_RMS=None, th_MIP=None
         bordersMIP = detectROI(tempMIP, N_u)
         borders = np.concatenate([np.minimum(bordersRMS[:, :1], bordersMIP[:, :1]),
                                   np.maximum(bordersRMS[:, 1:], bordersMIP[:, 1:])], axis=1)
+        if not autoFlag:
+            borders = selectROI(tempRMS, tempMIP, N_u, autoFlag, borders)
     borders = np.asarray(borders, dtype=np.float64)
+    if not autoFlag:
+        from monalisa.imDisp.bmImage import bmImage
+
+        bmImage(myRMS, name="RMS")
+        bmImage(myMIP, name="MIP")
 
     m = (myRMS > th_RMS) & (myMIP > th_MIP)
     if imDim == 3:
@@ -59,4 +69,9 @@ def bmCoilSense_nonCart_mask_automatic(y, Gn, autoFlag, th_RMS=None, th_MIP=None
         raise NotImplementedError("bmCoilSense_nonCart_mask_automatic: open_size is not ported yet")
     if not isempty(close_size) and close_size > 0:
         raise NotImplementedError("bmCoilSense_nonCart_mask_automatic: close_size is not ported yet")
+    if not autoFlag and np.any(~m):
+        from monalisa.imDisp.bmImage import bmImage
+
+        temp_im = m * myRMS
+        bmImage(np.concatenate([temp_im / np.max(np.abs(temp_im)), m], axis=1), name="mask")
     return bmBlockReshape(m, N_u)
