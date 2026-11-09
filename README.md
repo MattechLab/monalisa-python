@@ -50,6 +50,9 @@ The package installs as `monalisa-python` and is imported as `monalisa`.
 On Linux with X11, the Qt windows (napari viewer, interactive steps) also need a system library:
 `sudo apt install libxcb-cursor0` (Debian, Ubuntu) or `sudo dnf install xcb-util-cursor` (Fedora).
 Without it monalisa raises an error saying so; the notebook viewer works without it.
+In a conda environment, install `matplotlib-base` rather than conda's `matplotlib`: the latter
+brings PySide6 and a second Qt, whose X11 libraries clash with napari's PyQt6 and crash Python
+when a window opens.
 
 ## Viewing images and interactive steps
 
