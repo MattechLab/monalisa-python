@@ -144,6 +144,7 @@ Tutorial 1 (3D radial brain scan, Siemens raw data):
 python demo/data_demo/data_8_tutorial_1/download_data.py   # raw data, about 7.9 GB (once)
 jupyter lab examples/tutorial_1/tutorial_1.ipynb           # or:
 python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out results
+python examples/tutorial_1/tutorial_1.py --out results --show   # view the saved results
 ```
 
 ## Tests

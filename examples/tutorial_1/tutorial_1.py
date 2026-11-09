@@ -11,13 +11,15 @@ without windows, reproducibly:
 
 With ``--interactive`` it behaves like the MATLAB scripts: ``autoFlag=False`` (metadata and
 coil-mask windows), the normalization ROI is drawn with ``roipoly`` on the central slice, and the
-reconstructions are shown with ``bmImage`` at the end.
+reconstructions are shown with ``bmImage`` at the end (see ``show_results``). ``--show`` only
+adds the viewer at the end; without ``--data`` it shows the results already saved in ``--out``.
 
 The same steps, with explanations and figures: tutorial_1.ipynb in this folder.
 
 Usage (data from demo/data_demo/data_8_tutorial_1/download_data.py)::
 
     python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out results_py
+    python examples/tutorial_1/tutorial_1.py --out results_py --show   # view the saved results
 """
 
 from __future__ import annotations
@@ -181,9 +183,33 @@ def iterative_reconstructions(C, FoV: float, x1: list, out_dir: Path) -> dict:
     return {"x_sensa": x_sensa, "x_cs": x_cs}
 
 
+def show_results(out_dir: Path):
+    """Show the reconstructions saved in ``out_dir`` (reconstructions_script.m shows them with
+    bmImage): the all-lines image x0 in the orthogonal layout (three linked slices and 3D), and
+    the 8 bins of the gridded, Sensa and TevaMorphosia reconstructions side by side in one window
+    (shared slice and frame sliders), with the difference Sensa - TevaMorphosia."""
+    r = loadmat73(out_dir / "reconstructions.mat")
+    nFr = sum(1 for k in r if k.startswith("x1_"))
+    ml.bmImage(r["x0"], "ortho", name="x0 (all lines, gridded)")
+    v = ml.bmImage([r[f"x1_{i}"] for i in range(1, nFr + 1)], "window", name="gridded x1")
+    if (out_dir / "iterative.mat").exists():
+        it = loadmat73(out_dir / "iterative.mat")
+        sensa = [it[f"x_sensa_{i}"] for i in range(1, nFr + 1)]
+        cs = [it[f"x_cs_{i}"] for i in range(1, nFr + 1)]
+        ml.bmImage(sensa, viewer=v, name="Sensa")
+        ml.bmImage(cs, viewer=v, name="TevaMorphosia")
+        diff = [np.abs(s) - np.abs(c) for s, c in zip(sensa, cs, strict=True)]
+        lim = float(np.percentile(np.abs(np.stack(diff)), 99.5))  # symmetric range: 0 is mid-grey
+        ml.bmImage(diff, viewer=v, name="Sensa - TevaMorphosia", contrast=(-lim, lim))
+    _log("close the windows to quit")
+    import napari
+
+    napari.run()  # wait until the last window is closed (windows opened by a script close when it ends)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--data", type=Path, required=True,
+    ap.add_argument("--data", type=Path, default=None,
                     help="folder with bodyCoil.dat, surfaceCoil.dat, brainScan.dat")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--coil-map", type=Path, default=None,
@@ -192,7 +218,14 @@ def main(argv=None):
                     help="only the gridded reconstructions (no Sensa / TevaMorphosia)")
     ap.add_argument("--interactive", action="store_true",
                     help="windows as in the MATLAB scripts (autoFlag=false, roipoly, bmImage)")
+    ap.add_argument("--show", action="store_true",
+                    help="show the reconstructions at the end (without --data: only show those already in --out)")
     args = ap.parse_args(argv)
+    if args.data is None:
+        if not args.show:
+            ap.error("--data is required (or --show, to view results already in --out)")
+        show_results(args.out)
+        return
     args.out.mkdir(parents=True, exist_ok=True)
 
     t0 = time.time()
@@ -209,17 +242,12 @@ def main(argv=None):
     _log("reconstructions")
     FoV = float(np.ravel(reader.acquisitionParams.FoV)[0])
     rec = reconstructions(C, FoV, args.out)
-    it = None
     if not args.skip_iterative:
         _log("iterative reconstructions (Sensa, TevaMorphosia)")
-        it = iterative_reconstructions(C, FoV, rec["x1"], args.out)
+        iterative_reconstructions(C, FoV, rec["x1"], args.out)
     _log(f"done in {time.time() - t0:.0f} s")
-    if args.interactive:  # reconstructions_script.m: bmImage(x0), bmImage(x1), ...
-        ml.bmImage(rec["x0"], name="x0")
-        ml.bmImage(rec["x1"], name="x1", block=it is None)
-        if it is not None:
-            ml.bmImage(it["x_sensa"], name="x_sensa")
-            ml.bmImage(it["x_cs"], name="x_cs", block=True)
+    if args.interactive or args.show:  # reconstructions_script.m: bmImage(x0), bmImage(x1), ...
+        show_results(args.out)
 
 
 if __name__ == "__main__":
