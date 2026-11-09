@@ -63,6 +63,20 @@ def test_bmImage_napari(qtbot):
         viewer.close()
 
 
+def test_bmImage_render3d(qtbot):
+    napari = pytest.importorskip("napari")
+    viewer = napari.Viewer(show=False)
+    try:
+        x = np.random.default_rng(0).random((6, 7, 8, 2))
+        ml.bmImage(x, viewer=viewer, name="x", render3d=True)
+        assert viewer.dims.ndisplay == 3
+        assert viewer.dims.displayed == (2, 0, 1)  # volume of x, y, z; slider on t
+    finally:
+        viewer.close()
+    with pytest.raises(ValueError, match="napari"):
+        ml.bmImage(x, backend="notebook", render3d=True)
+
+
 def test_notebook_viewer_slices():
     pytest.importorskip("ipywidgets")
     from monalisa.imDisp._notebook import NotebookViewer

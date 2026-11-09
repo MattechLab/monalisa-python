@@ -12,7 +12,7 @@ import numpy as np
 
 from monalisa._mat import iscell, squeeze
 from monalisa.arrayUtility.bmCell2Array import bmCell2Array
-from monalisa.imDisp._qt import in_jupyter, qt_app
+from monalisa.imDisp._qt import NoDisplayError, has_display, in_jupyter
 
 AXIS_LABELS = ("x", "y", "z", "t", "u")
 
@@ -44,7 +44,7 @@ def view_order(ndim: int) -> tuple:
 
 
 def bmImage(argImage, *, name: str | None = None, backend: str | None = None, block: bool = False,
-            viewer=None, contrast_limits=None):
+            viewer=None, contrast_limits=None, render3d: bool = False):
     """Show a 2D, 3D, 4D or 5D image (or a cell / list of equally sized frames).
 
     Axes keep the MATLAB layout ``(x, y, z, t, ...)``: the slice ``x(:, :, k)`` is shown with x
@@ -61,14 +61,19 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
         ``napari.run()`` at the end (like ``plt.show()``).
     viewer : napari only: add the image as a new layer of this viewer instead of a new window.
     contrast_limits : ``(low, high)``; default: data range.
+    render3d : open napari in 3D (volume rendering of x, y, z; rotate with the mouse). Also from
+        a notebook, where the napari window opens next to it. Switch between 2D and 3D with the
+        cube button at the bottom left of the window, or ``viewer.dims.ndisplay = 2 / 3``.
 
     Returns the napari ``Viewer`` (its layers hold the data and any points you place), or the
     notebook widget.
     """
     x = image_data(argImage)
     if backend is None:
-        backend = "notebook" if in_jupyter() and viewer is None else "napari"
+        backend = "notebook" if in_jupyter() and viewer is None and not render3d else "napari"
     if backend == "notebook":
+        if render3d:
+            raise ValueError("bmImage: render3d needs the napari backend")
         from monalisa.imDisp._notebook import NotebookViewer
 
         w = NotebookViewer(x, name=name, contrast_limits=contrast_limits)
@@ -77,8 +82,10 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
     if backend != "napari":
         raise ValueError(f"bmImage: unknown backend {backend!r} (napari or notebook)")
 
-    qt_app("Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
-    import napari
+    if not has_display():
+        raise NoDisplayError("bmImage needs a display for the napari window (none found). "
+                             "Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
+    import napari  # creates the Qt application and, in IPython / Jupyter, starts its Qt event loop
 
     if viewer is None:
         viewer = napari.Viewer(title=name or "bmImage")
@@ -87,6 +94,8 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
     if viewer.dims.ndim == x.ndim:
         viewer.dims.axis_labels = AXIS_LABELS[: x.ndim]
         viewer.dims.order = view_order(x.ndim)
+    if render3d:
+        viewer.dims.ndisplay = 3
     if block:
         napari.run()
     return viewer

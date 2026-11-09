@@ -53,10 +53,13 @@ The package installs as `monalisa-python` and is imported as `monalisa`.
 axis order: `x(:, :, k)` with x down the rows, and sliders for z and time. Outside Jupyter it opens
 a [napari](https://napari.org) window (views along x/y/z, contrast, 3D rendering, points);
 inside Jupyter it shows sliders under the cell (`backend="napari"` opens the window instead).
+`render3d=True` opens the napari window in 3D (volume rendering, rotate with the mouse), from a
+script or from a notebook; the window stays responsive while the notebook runs.
 
 ```python
 import monalisa as ml
 ml.bmImage(x_cs)                 # list of 3D frames -> x, y, z, t
+ml.bmImage(x_cs, render3d=True)  # napari window in 3D, slider on t (also from Jupyter)
 ml.bmImage(x0, block=True)       # in a script: keep the window open until closed (or napari.run())
 mask = ml.roipoly(x0[:, :, 40])  # draw a polygon, like MATLAB roipoly
 ```
