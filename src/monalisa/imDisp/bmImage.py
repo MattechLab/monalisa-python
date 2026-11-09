@@ -73,8 +73,11 @@ def bmImage(argImage, view: str | None = None, *, name: str | None = None, contr
     block : in a script, wait until the window is closed. Windows opened from a script close when
         it ends: pass ``block=True`` on the last call (like ``plt.show()``). Not needed in
         Jupyter.
-    viewer : add the image as a new layer of this napari ``Viewer`` (returned by an earlier
-        ``bmImage`` call) instead of opening a new window, e.g. to compare two reconstructions.
+    viewer : add the image to this napari ``Viewer`` (returned by an earlier ``bmImage`` call)
+        instead of opening a new window, to compare reconstructions: the images are shown side by
+        side, in the order they were added, with shared sliders (napari grid mode). The grid
+        button at the bottom left of the window stacks them instead; hide the top one with the
+        eye icon of the layer list to see the one below.
 
     Returns
     -------
@@ -106,6 +109,7 @@ def bmImage(argImage, view: str | None = None, *, name: str | None = None, contr
         return OrthoViewer(x, name=name, contrast_limits=contrast).show(block=block)
     import napari  # creates the Qt application and, in IPython / Jupyter, starts its Qt event loop
 
+    added = viewer is not None and len(viewer.layers) > 0
     if viewer is None:
         viewer = napari.Viewer(title=name or "bmImage")
     kw = {} if contrast is None else {"contrast_limits": tuple(contrast)}
@@ -115,9 +119,18 @@ def bmImage(argImage, view: str | None = None, *, name: str | None = None, contr
         viewer.dims.order = view_order(x.ndim)
     if view == "3d":
         viewer.dims.ndisplay = 3
+    if added:  # side by side: stacked layers hide each other
+        _grid(viewer).enabled = True
+        viewer.title = "  |  ".join(layer.name for layer in viewer.layers)  # left to right
     if block:
         napari.run()
     return viewer
+
+
+def _grid(viewer):
+    """napari's grid settings (``viewer.canvas.grid`` since napari 0.9, ``viewer.grid`` before)."""
+    canvas = getattr(viewer, "canvas", None)
+    return canvas.grid if hasattr(canvas, "grid") else viewer.grid
 
 
 def _old_names(view, contrast, old: dict):

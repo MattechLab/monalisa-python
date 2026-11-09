@@ -59,6 +59,13 @@ def test_bmImage_napari(qtbot):
         assert viewer.dims.order == (3, 2, 0, 1)
         assert viewer.dims.displayed == (0, 1)
         assert tuple(viewer.dims.axis_labels) == ("x", "y", "z", "t")
+        from monalisa.imDisp.bmImage import _grid
+
+        assert not _grid(viewer).enabled
+        ml.bmImage(x + 1, viewer=viewer, name="x2")  # added to the window: side by side, in order
+        assert _grid(viewer).enabled
+        assert [_grid(viewer).position(i, viewer.layers) for i in range(2)] == [(0, 0), (0, 1)]
+        assert viewer.title == "x  |  x2"
     finally:
         viewer.close()
 

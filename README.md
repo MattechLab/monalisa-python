@@ -84,8 +84,9 @@ MATLAB axis order: `x(:, :, k)` with x down the rows, and sliders for z and time
 
 The windows also open from Jupyter, next to the notebook. Other parameters: `name` (title),
 `contrast=(low, high)`, `block=True` (in a script, keep the window open until it is closed; not
-needed in Jupyter) and `viewer` (add the image to an earlier `"window"` / `"3d"` window, e.g. to
-compare two reconstructions).
+needed in Jupyter) and `viewer` (add the image to an earlier `"window"` / `"3d"` window to compare
+reconstructions: side by side in the order added, with shared sliders; the grid button at the
+bottom left stacks them instead).
 
 ```python
 import monalisa as ml
@@ -94,7 +95,7 @@ ml.bmImage(x_cs, "3d", name="TevaMorphosia")
 ov = ml.bmImage(x_cs, "ortho")           # 3 slices + 3D, like ITK-SNAP
 ov.set_point([40, 36, 41, 0])            # move the cursor from code (0-based x, y, z, t); ov.point reads it
 v = ml.bmImage(x_sensa, "window", name="Sensa")
-ml.bmImage(x_cs, viewer=v, name="TevaMorphosia")   # same window: toggle the layers to compare
+ml.bmImage(x_cs, viewer=v, name="TevaMorphosia")   # same window, side by side: Sensa left, CS right
 ml.bmImage(x0, "window", block=True)     # in a script: keep the window open until closed
 mask = ml.roipoly(x0[:, :, 40])          # draw a polygon, like MATLAB roipoly
 ```
