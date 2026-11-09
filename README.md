@@ -68,7 +68,9 @@ on Linux with X11 needs the library libxcb-cursor (not available from pip). Eith
 Without it, opening a window raises an error that says so; the notebook viewer works without it.
 In a conda environment, install `matplotlib-base`, not conda's `matplotlib`: the latter brings
 PySide6 with a second copy of Qt, whose libraries clash with napari's (PyQt6) and crash Python as
-soon as a window opens.
+soon as a window opens. For the same reason, in a conda environment monalisa starts Qt with its
+built-in theme (`QT_QPA_PLATFORMTHEME=generic`) instead of the GTK one, which would load the
+system's GLib next to conda's; set `QT_QPA_PLATFORMTHEME` yourself to choose another.
 
 ## Viewing images and interactive steps
 

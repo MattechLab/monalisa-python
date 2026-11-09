@@ -34,11 +34,51 @@ XCB_CURSOR_HELP = (
 
 def check_display(hint: str = "") -> None:
     """Raise a Python error (instead of a Qt abort, which kills the process or the Jupyter kernel)
-    when Qt windows cannot be opened."""
+    when Qt windows cannot be opened, and prepare Qt before it starts (see ``_avoid_gtk_theme``)."""
     if not has_display():
         raise NoDisplayError("This step needs a display for its window (none found). " + hint)
     if _needs_xcb() and not _has_xcb_cursor():
         raise NoDisplayError(XCB_CURSOR_HELP)
+    _avoid_gtk_theme()
+    _close_windows_at_exit()
+
+
+def _avoid_gtk_theme() -> None:
+    """In a conda environment, use Qt's built-in theme instead of its GTK3 theme plugin.
+
+    The plugin (chosen by Qt on GNOME and similar desktops) loads the system GTK libraries, built
+    for the system GLib and HarfBuzz, while conda packages (matplotlib >= 3.11 through libraqm)
+    load the environment's own: whichever comes second breaks. Qt then segfaults when it starts
+    after matplotlib has drawn a figure (in Jupyter: the kernel dies), or matplotlib fails to import
+    after a window was opened. Only the look of the native dialogs changes (napari has its own
+    style). A theme chosen with ``QT_QPA_PLATFORMTHEME`` is kept."""
+    if not sys.platform.startswith("linux") or "QT_QPA_PLATFORMTHEME" in os.environ:
+        return
+    if os.path.exists(os.path.join(sys.prefix, "lib", "libglib-2.0.so.0")):
+        os.environ["QT_QPA_PLATFORMTHEME"] = "generic"
+
+
+_EXIT_HOOK = False
+
+
+def _close_windows_at_exit() -> None:
+    """Close the windows still open when Python exits while Qt is alive: left to the interpreter's
+    teardown, their OpenGL canvases can be destroyed out of order (segfault on exit)."""
+    global _EXIT_HOOK
+    if _EXIT_HOOK:
+        return
+    _EXIT_HOOK = True
+    import atexit
+
+    def close_all():
+        from qtpy.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if app is not None:
+            app.closeAllWindows()
+            app.processEvents()
+
+    atexit.register(close_all)
 
 
 def _needs_xcb() -> bool:

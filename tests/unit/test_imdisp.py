@@ -138,6 +138,26 @@ def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
         ml.bmImage(np.zeros((4, 4, 4)), view="window")
 
 
+def test_gtk_theme_avoided_with_conda_glib(monkeypatch, tmp_path):
+    # Qt's GTK3 theme loads the system GLib / HarfBuzz; with conda's already loaded (matplotlib),
+    # Qt segfaults on start (kernel dies), so a conda environment gets Qt's built-in theme
+    from monalisa.imDisp import _qt
+
+    monkeypatch.setattr(_qt.sys, "platform", "linux")
+    monkeypatch.setattr(_qt.sys, "prefix", str(tmp_path))
+    env = {}
+    monkeypatch.setattr(_qt.os, "environ", env)
+    _qt._avoid_gtk_theme()
+    assert env == {}  # no GLib in the environment (pip / venv): Qt's default
+    (tmp_path / "lib").mkdir()
+    (tmp_path / "lib" / "libglib-2.0.so.0").touch()
+    _qt._avoid_gtk_theme()
+    assert env == {"QT_QPA_PLATFORMTHEME": "generic"}
+    env["QT_QPA_PLATFORMTHEME"] = "gtk3"  # chosen by the user: kept
+    _qt._avoid_gtk_theme()
+    assert env == {"QT_QPA_PLATFORMTHEME": "gtk3"}
+
+
 def test_bmImage_render3d(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
