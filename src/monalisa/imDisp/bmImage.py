@@ -75,7 +75,8 @@ def bmImage(argImage, view: str | None = None, *, name: str | None = None, contr
         Jupyter.
     viewer : add the image to this napari ``Viewer`` (returned by an earlier ``bmImage`` call)
         instead of opening a new window, to compare reconstructions: the images are shown side by
-        side, in the order they were added, with shared sliders (napari grid mode). The grid
+        side in one row, in the order they were added, with shared sliders (napari grid mode;
+        ``viewer.canvas.grid.shape = (2, 2)`` for another arrangement). The grid
         button at the bottom left of the window stacks them instead; hide the top one with the
         eye icon of the layer list to see the one below.
 
@@ -120,7 +121,9 @@ def bmImage(argImage, view: str | None = None, *, name: str | None = None, contr
     if view == "3d":
         viewer.dims.ndisplay = 3
     if added:  # side by side: stacked layers hide each other
-        _grid(viewer).enabled = True
+        grid = _grid(viewer)
+        grid.enabled = True
+        grid.shape = (1, -1)  # one row, one column per image
         viewer.title = "  |  ".join(layer.name for layer in viewer.layers)  # left to right
     if block:
         napari.run()

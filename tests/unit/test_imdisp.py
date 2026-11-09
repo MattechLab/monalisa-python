@@ -64,8 +64,9 @@ def test_bmImage_napari(qtbot):
         assert not _grid(viewer).enabled
         ml.bmImage(x + 1, viewer=viewer, name="x2")  # added to the window: side by side, in order
         assert _grid(viewer).enabled
-        assert [_grid(viewer).position(i, viewer.layers) for i in range(2)] == [(0, 0), (0, 1)]
-        assert viewer.title == "x  |  x2"
+        ml.bmImage(x - 1, viewer=viewer, name="x3")
+        assert [_grid(viewer).position(i, viewer.layers) for i in range(3)] == [(0, 0), (0, 1), (0, 2)]
+        assert viewer.title == "x  |  x2  |  x3"
     finally:
         viewer.close()
 

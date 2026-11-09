@@ -85,7 +85,7 @@ MATLAB axis order: `x(:, :, k)` with x down the rows, and sliders for z and time
 The windows also open from Jupyter, next to the notebook. Other parameters: `name` (title),
 `contrast=(low, high)`, `block=True` (in a script, keep the window open until it is closed; not
 needed in Jupyter) and `viewer` (add the image to an earlier `"window"` / `"3d"` window to compare
-reconstructions: side by side in the order added, with shared sliders; the grid button at the
+reconstructions: side by side in one row, in the order added, with shared sliders; the grid button at the
 bottom left stacks them instead).
 
 ```python
