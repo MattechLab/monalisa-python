@@ -29,7 +29,7 @@ XCB_CURSOR_HELP = (
     "    conda install -c conda-forge xcb-util-cursor   (in a conda environment, no admin rights)\n"
     "    sudo apt install libxcb-cursor0                (Debian, Ubuntu)\n"
     "    sudo dnf install xcb-util-cursor               (Fedora)\n"
-    "In a notebook, bmImage(...) without render3d / backend='napari' works without it.")
+    "In a notebook, bmImage(x, view='inline') works without it.")
 
 
 def check_display(hint: str = "") -> None:

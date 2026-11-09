@@ -116,8 +116,8 @@ def test_orthogonal_layout(qtbot):
         ov.close()
     with pytest.raises(ValueError, match="3D"):
         OrthoViewer(np.zeros((4, 4)))
-    with pytest.raises(ValueError, match="napari"):
-        ml.bmImage(x, backend="notebook", layout="orthogonal")
+    with pytest.raises(ValueError, match="3D"):
+        ml.bmImage(np.zeros((4, 4)), view="ortho")
 
 
 def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
@@ -127,7 +127,7 @@ def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
     monkeypatch.setattr(_qt, "_needs_xcb", lambda: True)
     monkeypatch.setattr(_qt, "_has_xcb_cursor", lambda: False)
     with pytest.raises(_qt.NoDisplayError, match="libxcb-cursor0"):
-        ml.bmImage(np.zeros((4, 4, 4)), backend="napari")
+        ml.bmImage(np.zeros((4, 4, 4)), view="window")
 
 
 def test_bmImage_render3d(qtbot):
@@ -135,13 +135,30 @@ def test_bmImage_render3d(qtbot):
     viewer = napari.Viewer(show=False)
     try:
         x = np.random.default_rng(0).random((6, 7, 8, 2))
-        ml.bmImage(x, viewer=viewer, name="x", render3d=True)
+        ml.bmImage(x, "3d", viewer=viewer, name="x")
         assert viewer.dims.ndisplay == 3
         assert viewer.dims.displayed == (2, 0, 1)  # volume of x, y, z; slider on t
     finally:
         viewer.close()
-    with pytest.raises(ValueError, match="napari"):
-        ml.bmImage(x, backend="notebook", render3d=True)
+    with pytest.raises(ValueError, match="unknown view"):
+        ml.bmImage(x, view="3D slices")
+    with pytest.raises(ValueError, match="viewer="):
+        ml.bmImage(x, view="inline", viewer=viewer)
+
+
+def test_bmImage_old_keywords(qtbot):
+    napari = pytest.importorskip("napari")
+    viewer = napari.Viewer(show=False)
+    try:
+        x = np.random.default_rng(0).random((6, 7, 8))
+        with pytest.warns(FutureWarning, match="view='3d', contrast=\\(low, high\\)"):
+            ml.bmImage(x, viewer=viewer, render3d=True, contrast_limits=(0.1, 0.9))
+        assert viewer.dims.ndisplay == 3
+        assert tuple(viewer.layers[-1].contrast_limits) == (0.1, 0.9)
+    finally:
+        viewer.close()
+    with pytest.raises(TypeError, match="colour"):
+        ml.bmImage(x, colour="red")
 
 
 def test_notebook_viewer_slices():

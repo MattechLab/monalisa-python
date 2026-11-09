@@ -33,7 +33,7 @@ def dims_order(nd: int, k: int, r: int, c: int) -> tuple:
 
 
 class OrthoViewer:
-    """The window of ``bmImage(x, layout="orthogonal")``.
+    """The window of ``bmImage(x, view="ortho")``.
 
     ``point`` is the cursor position (0-based indices of x, y, z, t, ...); ``set_point`` moves it.
     ``models`` holds the napari ``ViewerModel`` of each view and ``images`` its image layer.

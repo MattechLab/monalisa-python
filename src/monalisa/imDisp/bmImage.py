@@ -43,8 +43,11 @@ def view_order(ndim: int) -> tuple:
     return tuple(range(ndim - 1, 1, -1)) + (0, 1)
 
 
-def bmImage(argImage, *, name: str | None = None, backend: str | None = None, block: bool = False,
-            viewer=None, contrast_limits=None, render3d: bool = False, layout: str = "single"):
+VIEWS = ("inline", "window", "3d", "ortho")
+
+
+def bmImage(argImage, view: str | None = None, *, name: str | None = None, contrast=None,
+            block: bool = False, viewer=None, **old_names):
     """Show a 2D, 3D, 4D or 5D image (or a cell / list of equally sized frames).
 
     Axes keep the MATLAB layout ``(x, y, z, t, ...)``: the slice ``x(:, :, k)`` is shown with x
@@ -53,59 +56,88 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
 
     Parameters
     ----------
-    name : window / layer title (MATLAB code calls ``title`` after ``bmImage``).
-    backend : ``"napari"`` (window), ``"notebook"`` (sliders below a Jupyter cell) or ``None``:
-        notebook inside Jupyter, napari otherwise.
-    block : napari only: wait until the window is closed. Windows opened from a plain script
-        close when the script ends; pass ``block=True`` on the last call, or call
-        ``napari.run()`` at the end (like ``plt.show()``).
-    viewer : napari only: add the image as a new layer of this viewer instead of a new window.
-    contrast_limits : ``(low, high)``; default: data range.
-    render3d : open napari in 3D (volume rendering of x, y, z; rotate with the mouse). Also from
-        a notebook, where the napari window opens next to it. Switch between 2D and 3D with the
-        cube button at the bottom left of the window, or ``viewer.dims.ndisplay = 2 / 3``.
-    layout : ``"single"`` (one view) or ``"orthogonal"``: one window laid out like ITK-SNAP, with
-        the slices along z, x and y and a 3D view, sharing a cursor (click in a slice view to move
-        it, with a crosshair), the time slider and the contrast. Returns an ``OrthoViewer``.
+    argImage : the image, or a list / cell of frames of the same size (stacked along t).
+    view : how to show it:
 
-    Returns the napari ``Viewer`` (its layers hold the data and any points you place), the
-    ``OrthoViewer`` (layout="orthogonal"), or the notebook widget.
+        - ``"inline"``: sliders and the slice below the cell (Jupyter only, no window);
+        - ``"window"``: a napari window with one slice view (views along x, y or z, contrast,
+          points; the cube button at its bottom left switches to 3D);
+        - ``"3d"``: the same window, opened in 3D (volume rendering, rotate with the mouse);
+        - ``"ortho"``: one window laid out like ITK-SNAP: the slices along z, x and y and a 3D
+          view, linked by a cursor (click in a slice view to move it).
+
+        Default: ``"inline"`` in Jupyter, ``"window"`` otherwise. Windows also open from Jupyter,
+        next to the notebook (they need a display).
+    name : title of the window and name of the image.
+    contrast : ``(low, high)`` display range; default: the data range.
+    block : in a script, wait until the window is closed. Windows opened from a script close when
+        it ends: pass ``block=True`` on the last call (like ``plt.show()``). Not needed in
+        Jupyter.
+    viewer : add the image as a new layer of this napari ``Viewer`` (returned by an earlier
+        ``bmImage`` call) instead of opening a new window, e.g. to compare two reconstructions.
+
+    Returns
+    -------
+    The viewer, to keep working with it from code: a napari ``Viewer`` (``"window"``, ``"3d"``;
+    its layers hold the data and any points placed), an ``OrthoViewer`` (``"ortho"``: ``.point``,
+    ``.set_point``) or the notebook viewer (``"inline"``).
     """
+    view, contrast = _old_names(view, contrast, old_names)
     x = image_data(argImage)
-    if backend is None:
-        napari_only = render3d or layout != "single" or viewer is not None
-        backend = "notebook" if in_jupyter() and not napari_only else "napari"
-    if layout not in ("single", "orthogonal"):
-        raise ValueError(f"bmImage: unknown layout {layout!r} (single or orthogonal)")
-    if backend == "notebook":
-        if render3d or layout != "single":
-            raise ValueError("bmImage: render3d and layout='orthogonal' need the napari backend")
+    if view is None:
+        view = "inline" if in_jupyter() and viewer is None else "window"
+    if view not in VIEWS:
+        raise ValueError(f"bmImage: unknown view {view!r} (one of {', '.join(VIEWS)})")
+    if viewer is not None and view not in ("window", "3d"):
+        raise ValueError(f"bmImage: viewer= adds to a napari window (view 'window' or '3d', not {view!r})")
+    if view in ("3d", "ortho") and x.ndim < 3:
+        raise ValueError(f"bmImage: view {view!r} needs a 3D (or 4D, 5D) image, got {x.ndim}D")
+    if view == "inline":
         from monalisa.imDisp._notebook import NotebookViewer
 
-        w = NotebookViewer(x, name=name, contrast_limits=contrast_limits)
+        w = NotebookViewer(x, name=name, contrast_limits=contrast)
         w.show()
         return w
-    if backend != "napari":
-        raise ValueError(f"bmImage: unknown backend {backend!r} (napari or notebook)")
 
-    check_display("Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
-    if layout == "orthogonal":
-        if viewer is not None:
-            raise ValueError("bmImage: layout='orthogonal' opens its own window (no viewer argument)")
+    check_display("In Jupyter, use view='inline', or save the image and view it elsewhere.")
+    if view == "ortho":
         from monalisa.imDisp._ortho import OrthoViewer
 
-        return OrthoViewer(x, name=name, contrast_limits=contrast_limits).show(block=block)
+        return OrthoViewer(x, name=name, contrast_limits=contrast).show(block=block)
     import napari  # creates the Qt application and, in IPython / Jupyter, starts its Qt event loop
 
     if viewer is None:
         viewer = napari.Viewer(title=name or "bmImage")
-    kw = {} if contrast_limits is None else {"contrast_limits": tuple(contrast_limits)}
+    kw = {} if contrast is None else {"contrast_limits": tuple(contrast)}
     viewer.add_image(x, name=name or "image", colormap="gray", **kw)
     if viewer.dims.ndim == x.ndim:
         viewer.dims.axis_labels = AXIS_LABELS[: x.ndim]
         viewer.dims.order = view_order(x.ndim)
-    if render3d:
+    if view == "3d":
         viewer.dims.ndisplay = 3
     if block:
         napari.run()
     return viewer
+
+
+def _old_names(view, contrast, old: dict):
+    """Earlier keywords (backend, render3d, layout, contrast_limits) still work, with a warning."""
+    if not old:
+        return view, contrast
+    import warnings
+
+    unknown = set(old) - {"backend", "render3d", "layout", "contrast_limits"}
+    if unknown:
+        raise TypeError(f"bmImage() got unexpected keyword arguments: {', '.join(sorted(unknown))}")
+    if old.get("layout") == "orthogonal":
+        new = "ortho"
+    elif old.get("render3d"):
+        new = "3d"
+    else:
+        new = {"notebook": "inline", "napari": "window"}.get(old.get("backend"))
+    if "contrast_limits" in old:
+        contrast = old["contrast_limits"]
+    hint = (f"view={new!r}" if new else "") + (", " if new and "contrast_limits" in old else "") + (
+        "contrast=(low, high)" if "contrast_limits" in old else "")
+    warnings.warn(f"bmImage: {', '.join(sorted(old))} are replaced by: {hint}", FutureWarning, stacklevel=3)
+    return view or new, contrast
