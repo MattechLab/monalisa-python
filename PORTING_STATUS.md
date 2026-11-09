@@ -1,10 +1,10 @@
 # Porting status
 
-Generated 2026-11-06 by `tools/port_status.py` against upstream commit `0cb5cf9`.
+Generated 2026-11-09 by `tools/port_status.py` against upstream commit `0cb5cf9`.
 
 - Scope: **175 functions** of `src/` reachable from the demo pipelines (11188 code lines).
 - Ported: **139** (6989 code lines, 62 %).
-- Validated against MATLAB recordings: **106**.
+- Validated against MATLAB recordings: **109**.
 
 *rel L2* is the worst relative L2 error over all recorded calls and outputs.
 
@@ -31,7 +31,7 @@ Generated 2026-11-06 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmBackGradientT` | src/optim/bmBackGradientT.m | 8 | yes | 4/4 ok | 0.0e+00 |
 | `bmBlockReshape` | src/arrayUtility/bmBlockReshape.m | 16 | yes | 28/28 ok | 0.0e+00 |
 | `bmCell2Array` | src/arrayUtility/bmCell2Array.m | 24 | yes | no recording |  |
-| `bmCheckDir` | src/readWrite/bmCheckDir.m | 16 | yes | 0/3 ok (3 known div.) |  |
+| `bmCheckDir` | src/readWrite/bmCheckDir.m | 16 | yes | 3/3 ok | 0.0e+00 |
 | `bmPointReshape` | src/arrayUtility/bmPointReshape.m | 25 | yes | 30/30 ok | 0.0e+00 |
 | `bmLowRes` | src/mriRecon/function/bmLowRes.m | 44 | yes | 2/2 ok | 0.0e+00 |
 | `bmPermuteToCol` | src/arrayUtility/bmPermuteToCol.m | 24 | yes | 2/2 ok | 0.0e+00 |
@@ -131,7 +131,7 @@ Generated 2026-11-06 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmShanna_MATLAB` | src/fourier123/map_function/nonCartesian/bmShanna_MATLAB.m | 60 | yes | 4/4 ok | 2.4e-07 |
 | `bmShanna` | src/fourier123/map_function/nonCartesian/bmShanna.m | 18 | yes | 4/4 ok | 2.4e-07 |
 | `bmCoilSense_nonCart_secondary` | src/coilSense/nonCart/bmCoilSense_nonCart_secondary.m | 60 | yes | no recording |  |
-| `bmCreateDir` | src/readWrite/bmCreateDir.m | 19 | yes | 0/3 ok (3 known div.) |  |
+| `bmCreateDir` | src/readWrite/bmCreateDir.m | 19 | yes | 3/3 ok | 0.0e+00 |
 | `bmDFT1_conjTrans` | src/fourier1/bmDFT1_conjTrans.m | 9 | yes | no recording |  |
 | `bmDFT2_conjTrans` | src/fourier2/bmDFT2_conjTrans.m | 11 | yes | no recording |  |
 | `bmDFT3_conjTrans` | src/fourier3/bmDFT3_conjTrans.m | 13 | yes | no recording |  |
@@ -181,7 +181,7 @@ Generated 2026-11-06 by `tools/port_status.py` against upstream commit `0cb5cf9`
 | `bmTevaDuoMorphosia_chain` | src/fourier123/solver_function/imDim_morphosia/nonCartesian/bmTevaDuoMorphosia_chain.m | 217 | yes | no recording |  |
 | `bmTevaMorphosia_chain` | src/fourier123/solver_function/imDim_morphosia/nonCartesian/bmTevaMorphosia_chain.m | 165 | yes | no recording |  |
 | `bmTevaMorphosia_sheet` | src/fourier123/solver_function/imDim_morphosia/nonCartesian/bmTevaMorphosia_sheet.m | 223 |  |  |  |
-| `bmTimeInSecond` | src/time/bmTimeInSecond.m | 4 | yes | 0/4 ok (4 known div.) |  |
+| `bmTimeInSecond` | src/time/bmTimeInSecond.m | 4 | yes | 4/4 ok | 0.0e+00 |
 | `bmVarargin_sparseType` | src/varargin/bmVarargin_sparseType.m | 7 | yes | 6/6 ok | 0.0e+00 |
 | `bmTraj2SparseMat` | src/gridding123/m/bmTraj2SparseMat.m | 255 | yes | 7/7 ok | 0.0e+00 |
 | `bmWitnessInfo` | src/optim/bmWitnessInfo.m | 138 | yes | no recording |  |

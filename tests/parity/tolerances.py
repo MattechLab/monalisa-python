@@ -20,9 +20,8 @@ TOLERANCES: dict[str, Tolerance] = {
 # Record ids ("scenario/func/call_NNN") or function names that are expected
 # to differ from MATLAB, with the reason. Keep this list short and justified.
 KNOWN_DIVERGENCES: dict[str, str] = {
-    "bmTimeInSecond": "wall-clock time, not reproducible",
-    "bmCheckDir": "depends on the file system state at recording time",
-    "bmCreateDir": "depends on the file system state (and would create the recorded directories)",
+    # bmTimeInSecond, bmCheckDir and bmCreateDir depend on the clock and on the file system: they are
+    # replayed after restoring that state (environment.py).
     # MATLAB's imregdemons (Image Processing Toolbox) is replaced by SimpleITK's demons:
     # same algorithm, fields equal in quality but not to rounding. Validated on registration
     # quality and on the motion-compensated reconstructions: tests/validation/test_registration_vs_matlab.py,

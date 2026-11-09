@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from environment import prepare
 from tolerances import KNOWN_DIVERGENCES, tolerance_for
 
 import monalisa
@@ -29,7 +30,10 @@ def test_parity(path, tmp_path, monkeypatch):
     if reason:
         pytest.xfail(reason)
 
+    check = prepare(rec, tmp_path, monkeypatch)
     outs = replay(rec, func)
+    if check:
+        check()
     tol = tolerance_for(rec.func)
     issues = []
     for i, (py, ml) in enumerate(zip(outs, rec.outputs, strict=True)):

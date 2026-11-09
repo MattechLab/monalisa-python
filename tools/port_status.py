@@ -14,15 +14,18 @@ import argparse
 import datetime as dt
 import json
 import sys
+import tempfile
 import traceback
 from collections import defaultdict
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parents[1] / "tests" / "parity"))
 
+from environment import prepare  # noqa: E402
 from tolerances import KNOWN_DIVERGENCES, tolerance_for  # noqa: E402
 from upstream_graph import scope  # noqa: E402
 
@@ -75,7 +78,11 @@ def run(fixtures: Path):
             r["xfail"] += 1
             continue
         try:
-            outs = replay(rec, func)
+            with tempfile.TemporaryDirectory() as tmp, pytest.MonkeyPatch.context() as mp:
+                check = prepare(rec, Path(tmp), mp)
+                outs = replay(rec, func)
+                if check:
+                    check()
             issues = []
             for i, (py, ml) in enumerate(zip(outs, rec.outputs, strict=True)):
                 mlc = from_matlab(ml, "output")
