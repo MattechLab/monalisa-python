@@ -37,6 +37,8 @@ Live status: [PORTING_STATUS.md](PORTING_STATUS.md).
 
 ## Install
 
+With pip (any Python environment, 3.10 or newer):
+
 ```bash
 git clone https://github.com/MattechLab/monalisa-python.git
 cd monalisa-python
@@ -45,14 +47,28 @@ pip install -e ".[io,reg,notebook]"   # + JupyterLab, for the tutorial notebook
 pip install -e ".[dev,io]"            # + pytest, ruff (development)
 ```
 
+With conda (everything inside the environment, no admin rights needed):
+
+```bash
+conda create -n monalisa -c conda-forge python=3.12 matplotlib-base xcb-util-cursor
+conda activate monalisa
+pip install -e ".[io,reg,notebook]"
+```
+
 The package installs as `monalisa-python` and is imported as `monalisa`.
 
-On Linux with X11, the Qt windows (napari viewer, interactive steps) also need a system library:
-`sudo apt install libxcb-cursor0` (Debian, Ubuntu) or `sudo dnf install xcb-util-cursor` (Fedora).
-Without it monalisa raises an error saying so; the notebook viewer works without it.
-In a conda environment, install `matplotlib-base` rather than conda's `matplotlib`: the latter
-brings PySide6 and a second Qt, whose X11 libraries clash with napari's PyQt6 and crash Python
-when a window opens.
+**Linux: library for the Qt windows.** The napari viewer and the interactive steps use Qt, which
+on Linux with X11 needs the library libxcb-cursor (not available from pip). Either:
+
+- in a conda environment: `conda install -c conda-forge xcb-util-cursor` (monalisa loads it from
+  the environment), or
+- system-wide: `sudo apt install libxcb-cursor0` (Debian, Ubuntu) or
+  `sudo dnf install xcb-util-cursor` (Fedora).
+
+Without it, opening a window raises an error that says so; the notebook viewer works without it.
+In a conda environment, install `matplotlib-base`, not conda's `matplotlib`: the latter brings
+PySide6 with a second copy of Qt, whose libraries clash with napari's (PyQt6) and crash Python as
+soon as a window opens.
 
 ## Viewing images and interactive steps
 

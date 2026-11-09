@@ -25,9 +25,10 @@ def has_display() -> bool:
 
 XCB_CURSOR_HELP = (
     "Qt (used for the napari window and the interactive steps) cannot open windows: the system "
-    "library libxcb-cursor0 is missing. Install it once, then restart Python / the kernel:\n"
-    "    sudo apt install libxcb-cursor0      (Debian, Ubuntu)\n"
-    "    sudo dnf install xcb-util-cursor     (Fedora)\n"
+    "library libxcb-cursor is missing. Install it once, then restart Python / the kernel:\n"
+    "    conda install -c conda-forge xcb-util-cursor   (in a conda environment, no admin rights)\n"
+    "    sudo apt install libxcb-cursor0                (Debian, Ubuntu)\n"
+    "    sudo dnf install xcb-util-cursor               (Fedora)\n"
     "In a notebook, bmImage(...) without render3d / backend='napari' works without it.")
 
 
@@ -54,26 +55,50 @@ def _needs_xcb() -> bool:
     return not os.environ.get("WAYLAND_DISPLAY")
 
 
-def _has_xcb_cursor() -> bool:
-    # Needed by Qt >= 6.5 and loaded from the system library paths or LD_LIBRARY_PATH (not from a
-    # conda environment's lib folder, which ctypes.util.find_library also searches under conda).
-    import subprocess
+_XCB_CURSOR = "libxcb-cursor.so.0"
 
+
+def _has_xcb_cursor() -> bool:
+    """libxcb-cursor (needed by Qt >= 6.5 for X11 windows) is available, from the system or, if
+    missing there, from the conda environment (conda-forge package ``xcb-util-cursor``)."""
     from qtpy import QT_VERSION
 
     if tuple(int(v) for v in QT_VERSION.split(".")[:2]) < (6, 5):
         return True
-    name = "libxcb-cursor.so.0"
+    return _system_has_xcb_cursor() or _load_env_xcb_cursor()
+
+
+def _system_has_xcb_cursor() -> bool:
+    # Qt loads it from the system library paths or LD_LIBRARY_PATH. Not ctypes.util.find_library:
+    # under conda it also searches the environment's lib folder, which Qt does not.
+    import subprocess
+
     for d in os.environ.get("LD_LIBRARY_PATH", "").split(os.pathsep):
-        if d and os.path.exists(os.path.join(d, name)):
+        if d and os.path.exists(os.path.join(d, _XCB_CURSOR)):
             return True
     for ldconfig in ("/sbin/ldconfig", "/usr/sbin/ldconfig", "ldconfig"):
         try:
             out = subprocess.run([ldconfig, "-p"], capture_output=True, text=True, timeout=10).stdout
         except (OSError, subprocess.SubprocessError):
             continue
-        return name in out
+        return _XCB_CURSOR in out
     return True  # cannot tell: let Qt try
+
+
+def _load_env_xcb_cursor() -> bool:
+    """Load the conda environment's copy before Qt starts: Qt's platform plugin then uses it (a
+    library already loaded under the same name is reused)."""
+    import ctypes
+
+    for prefix in dict.fromkeys(p for p in (sys.prefix, os.environ.get("CONDA_PREFIX")) if p):
+        path = os.path.join(prefix, "lib", _XCB_CURSOR)
+        if os.path.exists(path):
+            try:
+                ctypes.CDLL(path, mode=ctypes.RTLD_GLOBAL)
+                return True
+            except OSError:
+                pass
+    return False
 
 
 def qt_app(hint: str = ""):
