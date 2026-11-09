@@ -44,7 +44,7 @@ def view_order(ndim: int) -> tuple:
 
 
 def bmImage(argImage, *, name: str | None = None, backend: str | None = None, block: bool = False,
-            viewer=None, contrast_limits=None, render3d: bool = False):
+            viewer=None, contrast_limits=None, render3d: bool = False, layout: str = "single"):
     """Show a 2D, 3D, 4D or 5D image (or a cell / list of equally sized frames).
 
     Axes keep the MATLAB layout ``(x, y, z, t, ...)``: the slice ``x(:, :, k)`` is shown with x
@@ -64,16 +64,22 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
     render3d : open napari in 3D (volume rendering of x, y, z; rotate with the mouse). Also from
         a notebook, where the napari window opens next to it. Switch between 2D and 3D with the
         cube button at the bottom left of the window, or ``viewer.dims.ndisplay = 2 / 3``.
+    layout : ``"single"`` (one view) or ``"orthogonal"``: one window laid out like ITK-SNAP, with
+        the slices along z, x and y and a 3D view, sharing a cursor (click in a slice view to move
+        it, with a crosshair), the time slider and the contrast. Returns an ``OrthoViewer``.
 
-    Returns the napari ``Viewer`` (its layers hold the data and any points you place), or the
-    notebook widget.
+    Returns the napari ``Viewer`` (its layers hold the data and any points you place), the
+    ``OrthoViewer`` (layout="orthogonal"), or the notebook widget.
     """
     x = image_data(argImage)
     if backend is None:
-        backend = "notebook" if in_jupyter() and viewer is None and not render3d else "napari"
+        napari_only = render3d or layout != "single" or viewer is not None
+        backend = "notebook" if in_jupyter() and not napari_only else "napari"
+    if layout not in ("single", "orthogonal"):
+        raise ValueError(f"bmImage: unknown layout {layout!r} (single or orthogonal)")
     if backend == "notebook":
-        if render3d:
-            raise ValueError("bmImage: render3d needs the napari backend")
+        if render3d or layout != "single":
+            raise ValueError("bmImage: render3d and layout='orthogonal' need the napari backend")
         from monalisa.imDisp._notebook import NotebookViewer
 
         w = NotebookViewer(x, name=name, contrast_limits=contrast_limits)
@@ -83,6 +89,12 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
         raise ValueError(f"bmImage: unknown backend {backend!r} (napari or notebook)")
 
     check_display("Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
+    if layout == "orthogonal":
+        if viewer is not None:
+            raise ValueError("bmImage: layout='orthogonal' opens its own window (no viewer argument)")
+        from monalisa.imDisp._ortho import OrthoViewer
+
+        return OrthoViewer(x, name=name, contrast_limits=contrast_limits).show(block=block)
     import napari  # creates the Qt application and, in IPython / Jupyter, starts its Qt event loop
 
     if viewer is None:

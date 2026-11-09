@@ -63,6 +63,63 @@ def test_bmImage_napari(qtbot):
         viewer.close()
 
 
+def _click(ov, view, position, drag=False):
+    """Run the mouse callback of a slice view for a press / (move) / release at ``position``."""
+    from types import SimpleNamespace
+
+    model = ov.models[view]
+    event = SimpleNamespace(button=1, type="mouse_press", position=position)
+    gen = model.mouse_drag_callbacks[-1](model, event)
+    next(gen)
+    if drag:
+        event.type = "mouse_move"
+        next(gen)
+    event.type = "mouse_release"
+    with pytest.raises(StopIteration):
+        next(gen)
+
+
+def test_orthogonal_layout(qtbot):
+    pytest.importorskip("napari")
+    from monalisa.imDisp._ortho import OrthoViewer
+
+    x = np.random.default_rng(0).random((10, 12, 14, 3))
+    ov = OrthoViewer(x, name="x")
+    try:
+        assert {v: m.dims.displayed for v, m in ov.models.items()} == {
+            "along z": (0, 1), "along x": (1, 2), "3D": (2, 0, 1), "along y": (2, 0)}
+        assert ov.models["3D"].dims.ndisplay == 3
+        assert ov.point == (5, 6, 7, 0)  # centre, first frame
+        ov.set_point([2, 3, 4, 1])
+        assert all(m.dims.current_step == (2, 3, 4, 1) for m in ov.models.values())
+        ov.set_point([50, -3, 7, 2])  # clipped to the image
+        assert ov.point == (9, 0, 7, 2)
+        ov.models["along y"].dims.current_step = (2, 5, 4, 1)  # the slider of one view moves all
+        assert ov.models["3D"].dims.current_step == (2, 5, 4, 1)
+        # crosshair of "along z" (rows x, columns y): lines at x = 2 and y = 5, on slice z = 4, t = 1
+        lines = [np.asarray(d) for d in ov.crosshairs["along z"].data]
+        np.testing.assert_array_equal(lines[0], [[2, 0, 4, 1], [2, 11, 4, 1]])
+        np.testing.assert_array_equal(lines[1], [[0, 5, 4, 1], [9, 5, 4, 1]])
+        assert "x = 3 / 10" in ov.window.readout.text() and f"{x[2, 5, 4, 1]:.4g}" in ov.window.readout.text()
+        # a click moves the two axes shown in that view; a drag (pan) does not move the cursor
+        _click(ov, "along z", (7.2, 1.6, 0, 0))
+        assert ov.point == (7, 2, 4, 1)
+        _click(ov, "along x", (0, 10.4, 12.7, 0))
+        assert ov.point == (7, 10, 13, 1)
+        _click(ov, "along y", (1, 1, 1, 0), drag=True)
+        assert ov.point == (7, 10, 13, 1)
+        # contrast set in one view applies to all
+        ov.images["along x"].contrast_limits = (0.2, 0.7)
+        assert all(tuple(i.contrast_limits) == (0.2, 0.7) for i in ov.images.values())
+        assert set(ov.qt_viewers["along z"].controls.widgets) == set(ov.models["along z"].layers)
+    finally:
+        ov.close()
+    with pytest.raises(ValueError, match="3D"):
+        OrthoViewer(np.zeros((4, 4)))
+    with pytest.raises(ValueError, match="napari"):
+        ml.bmImage(x, backend="notebook", layout="orthogonal")
+
+
 def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
     # Qt >= 6.5 aborts the process (and the Jupyter kernel) without libxcb-cursor0
     from monalisa.imDisp import _qt

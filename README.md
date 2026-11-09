@@ -78,11 +78,16 @@ a [napari](https://napari.org) window (views along x/y/z, contrast, 3D rendering
 inside Jupyter it shows sliders under the cell (`backend="napari"` opens the window instead).
 `render3d=True` opens the napari window in 3D (volume rendering, rotate with the mouse), from a
 script or from a notebook; the window stays responsive while the notebook runs.
+`layout="orthogonal"` opens one window laid out like ITK-SNAP: the slices along z, x and y and the
+3D view (bottom left), linked by a cursor with a crosshair (click in a slice view to move it), with
+one time slider and one contrast setting for all views.
 
 ```python
 import monalisa as ml
 ml.bmImage(x_cs)                 # list of 3D frames -> x, y, z, t
 ml.bmImage(x_cs, render3d=True)  # napari window in 3D, slider on t (also from Jupyter)
+ov = ml.bmImage(x_cs, layout="orthogonal")  # 3 slices + 3D, like ITK-SNAP
+ov.set_point([40, 36, 41, 0])    # move the cursor from code (0-based x, y, z, t); ov.point reads it
 ml.bmImage(x0, block=True)       # in a script: keep the window open until closed (or napari.run())
 mask = ml.roipoly(x0[:, :, 40])  # draw a polygon, like MATLAB roipoly
 ```
