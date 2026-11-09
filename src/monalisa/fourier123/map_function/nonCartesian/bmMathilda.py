@@ -70,7 +70,7 @@ def bmMathilda(y, t, v, C=None, N_u=None, n_u=None, dK_u=None, kernelType=None, 
     x = bmGridder_n2u_leight(y, t, v, N_u, dK_u, kernelType, nWin, kernelParam)
 
     x = reshape(x, [nCh, np.prod(N_u)])
-    x = x.T
+    x = np.asfortranarray(x.T)  # MATLAB x.' copies: [prod(N_u), nCh] in column order
     x = bmBlockReshape(x, N_u)
     idf = {1: bmIDF1, 2: bmIDF2, 3: bmIDF3}[imDim]
     x = idf(x, N_u, dK_u)

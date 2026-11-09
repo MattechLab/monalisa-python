@@ -3,7 +3,7 @@
 import numpy as np
 import scipy.special
 
-from monalisa._mat import double, int32, single, vec
+from monalisa._mat import double, int32, repmat, single, vec
 from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
 from monalisa.fourier1.bmDFT1 import bmDFT1
 from monalisa.fourier2.bmDFT2 import bmDFT2
@@ -81,5 +81,5 @@ def bmK(N_u, dK_u, nCh, kernelType=None, nWin=None, kernelParam=None):
     K = K / np.max(np.abs(K))
     K = 1.0 / K
     K = np.minimum(K, K_max)
-    K = np.tile(np.reshape(K, (-1, 1), order="F"), (1, nCh))
+    K = repmat(np.reshape(K, (-1, 1), order="F"), 1, nCh)
     return single(K)

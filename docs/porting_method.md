@@ -113,8 +113,15 @@ ones, and re-port the functions whose source or recorded behaviour changed.
 - Speed on large 3D problems is limited by memory copies, not by the FFTs: shifting all axes at
   once around the 1-D FFTs, a complex sparse product without real/imaginary copies, and `mixed`
   computing in double by chunks (no full-size double temporaries) gave 2.3× (Sensa) and 1.4×
-  (TevaMorphosia) with bit-identical results. The remaining cost is flattening row-major arrays
-  in column-major order; keeping the data column-major throughout would remove it.
+  (TevaMorphosia) with bit-identical results. Keeping the arrays in column order in memory (as
+  MATLAB does, see CONVENTIONS.md) then removed the copies made by every MATLAB-order reshape and
+  `x(:)` of row-major arrays; with parallel `fftshift` copies (`monalisa._fft`), sparse products
+  looping one channel at a time, and output arrays cleared by all threads before use (on huge
+  pages, threads writing the columns of a fresh array together wait on the same page faults),
+  tutorial 1 went from 36:16 to 22:33 (iterative reconstructions 30:49 → 18:26, gridded
+  reconstructions 1:12 → 0:30; 36-thread machine). Sums now run in column order, so results
+  moved by float32 rounding (relative 1e-7 to 3e-7 from the previous Python run); the
+  differences from MATLAB are unchanged (`tests/e2e` report).
 
 ## Validation status (tutorial 1)
 

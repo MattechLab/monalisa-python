@@ -73,7 +73,7 @@ def bmImResize(argIm, n_u, N_u, interp_option=None):
         if is_single:
             W = W.astype(np.float32)
         out = np.moveaxis(np.tensordot(W, out, axes=([1], [ax])), 0, ax)
-    out = out.astype(np.complex128 if np.iscomplexobj(out) else np.float64)
+    out = out.astype(np.complex128 if np.iscomplexobj(out) else np.float64, order="F")  # column order
 
     out = reshape(out, [*N_u, nCh])
     if bmIsColShape(argIm, N_u):

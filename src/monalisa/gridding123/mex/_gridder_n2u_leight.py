@@ -3,6 +3,9 @@
 The loops, their order and the float32 arithmetic follow the C++ sources so
 that results agree with MATLAB to rounding level. The C++ code uses a
 Gaussian kernel whatever the kernel type passed to the MATLAB wrapper.
+
+Arrays ``[nCh, n]`` are in column order (channels contiguous, as in MATLAB memory): the channel
+loop inside the window then reads and writes consecutive values.
 """
 
 import math
@@ -44,8 +47,8 @@ def bmGridder_n2u_leight3_mex(aRe, aIm, tx, ty, tz, Dn, Nx, Ny, Nz, nWin, kernel
     """3D: ``a`` is ``[nCh, nPt]`` (float32), returns ``(bRe, bIm)`` of shape ``[nCh, Nx*Ny*Nz]``."""
     nCh, nPt = aRe.shape
     Nu_tot = Nx * Ny * Nz
-    bRe = np.zeros((nCh, Nu_tot), dtype=np.float32)
-    bIm = np.zeros((nCh, Nu_tot), dtype=np.float32)
+    bRe = np.zeros((Nu_tot, nCh), dtype=np.float32).T  # column order
+    bIm = np.zeros((Nu_tot, nCh), dtype=np.float32).T  # column order
     normalize = np.zeros(Nu_tot, dtype=np.float32)
     t_shift, nWin_half, g1, g2 = _setup(nWin, kernelParam_1)
     nWin_half_f = _F32(nWin_half)
@@ -107,8 +110,8 @@ def bmGridder_n2u_leight2_mex(aRe, aIm, tx, ty, Dn, Nx, Ny, nWin, kernelParam_1)
     """2D version of :func:`bmGridder_n2u_leight3_mex`."""
     nCh, nPt = aRe.shape
     Nu_tot = Nx * Ny
-    bRe = np.zeros((nCh, Nu_tot), dtype=np.float32)
-    bIm = np.zeros((nCh, Nu_tot), dtype=np.float32)
+    bRe = np.zeros((Nu_tot, nCh), dtype=np.float32).T  # column order
+    bIm = np.zeros((Nu_tot, nCh), dtype=np.float32).T  # column order
     normalize = np.zeros(Nu_tot, dtype=np.float32)
     t_shift, nWin_half, g1, g2 = _setup(nWin, kernelParam_1)
     nWin_half_f = _F32(nWin_half)
@@ -156,8 +159,8 @@ def bmGridder_n2u_leight2_mex(aRe, aIm, tx, ty, Dn, Nx, Ny, nWin, kernelParam_1)
 def bmGridder_n2u_leight1_mex(aRe, aIm, tx, Dn, Nx, nWin, kernelParam_1):
     """1D version of :func:`bmGridder_n2u_leight3_mex`."""
     nCh, nPt = aRe.shape
-    bRe = np.zeros((nCh, Nx), dtype=np.float32)
-    bIm = np.zeros((nCh, Nx), dtype=np.float32)
+    bRe = np.zeros((Nx, nCh), dtype=np.float32).T  # column order
+    bIm = np.zeros((Nx, nCh), dtype=np.float32).T  # column order
     normalize = np.zeros(Nx, dtype=np.float32)
     t_shift, nWin_half, g1, g2 = _setup(nWin, kernelParam_1)
     nWin_half_f = _F32(nWin_half)

@@ -40,6 +40,14 @@ added on top later without changing these modules.
 - **Column-major**: every MATLAB `reshape`, `x(:)` and linear index uses `order="F"`
   (`_mat.reshape`, `_mat.col`, `_mat.row`). Never call `np.reshape` without `order="F"` on data
   whose layout matters.
+- **Column order in memory too**, as in MATLAB: arrays created by the port are Fortran-ordered
+  (`order="F"`, `_mat.repmat` instead of `np.tile`, `.T` copies made with `np.asfortranarray`), so
+  the reshapes and `x(:)` above are views, not copies, and NumPy sums go through the elements in
+  MATLAB's order. Element-wise NumPy operations keep the order of their inputs; `_mat.mixed`
+  returns column order. Numba kernels loop with the first index innermost (or, like the MEX, over
+  the contiguous channels of `[nCh, nPt]` arrays). Arrays in the other order are still read
+  correctly, only more slowly; element-wise results do not depend on the layout, sums may differ
+  in the last bits.
 - Indices are 0-based internally. Index *values* returned to the caller keep MATLAB semantics
   (1-based, as doubles) when MATLAB returns them, and this is stated in the docstring.
 - Cell arrays are object ndarrays with the MATLAB shape (`_mat.cell_from_items`); lists are

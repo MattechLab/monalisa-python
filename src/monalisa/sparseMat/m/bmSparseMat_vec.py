@@ -3,20 +3,20 @@
 import numpy as np
 
 from monalisa._mat import disp, isempty
-from monalisa.sparseMat.mex._sparse_vec import csr_matvec, csr_matvec_complex
+from monalisa.sparseMat.mex._sparse_vec import matvec, zeros
 
 
 def _matvec(s, V):
     row_of, row_start, cols, vals = s.csr()
-    W = np.zeros((int(s.l_size), V.shape[1]), dtype=np.float32)
-    csr_matvec(row_of, row_start, cols, vals, np.ascontiguousarray(V, dtype=np.float32), W)
+    W = zeros((int(s.l_size), V.shape[1]), np.float32)
+    matvec(row_of, row_start, cols, vals, np.asarray(V, dtype=np.float32), W)
     return W
 
 
 def _matvec_complex(s, V):
     row_of, row_start, cols, vals = s.csr()
-    W = np.zeros((int(s.l_size), V.shape[1]), dtype=np.complex64)
-    csr_matvec_complex(row_of, row_start, cols, vals, V, W)
+    W = zeros((int(s.l_size), V.shape[1]), np.complex64)
+    matvec(row_of, row_start, cols, vals, V, W)
     return W
 
 

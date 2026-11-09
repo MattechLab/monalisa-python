@@ -52,8 +52,9 @@ def bmGridder_n2u_leight(y, t, v, N_u, dK_u, kernelType=None, nWin=None, kernelP
     y = y[:, keep]
     v = np.ascontiguousarray(v[0, keep])
 
-    yRe = np.ascontiguousarray(y.real, dtype=np.float32)
-    yIm = np.ascontiguousarray(y.imag, dtype=np.float32) if np.iscomplexobj(y) else np.zeros_like(yRe)
+    # [nCh, nPt] in column order, as the MEX reads it (channels of a point contiguous)
+    yRe = np.asfortranarray(y.real, dtype=np.float32)
+    yIm = np.asfortranarray(y.imag, dtype=np.float32) if np.iscomplexobj(y) else np.zeros_like(yRe)
     N = [int(n) for n in N_u[:imDim]]
     nW = int(nWin[0])
     kp1 = np.float32(kernelParam[0])

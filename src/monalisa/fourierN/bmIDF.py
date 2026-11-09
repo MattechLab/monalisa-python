@@ -3,6 +3,7 @@
 import numpy as np
 import scipy.fft
 
+from monalisa._fft import fftshift, ifftshift
 from monalisa._mat import fix, isempty, mixed, msize, ndims
 
 
@@ -66,8 +67,8 @@ def bmIDF(f, k, nZero=None, nDim=None, gridType=None, nargout=1):
         f = np.concatenate([z, f, z], axis=ax)
 
     def cifft(a):
-        a = scipy.fft.ifft(scipy.fft.ifftshift(a, axes=ax), axis=ax, workers=-1)
-        return scipy.fft.fftshift(a, axes=ax)
+        a = scipy.fft.ifft(ifftshift(a, axes=ax), axis=ax, workers=-1, overwrite_x=True)
+        return fftshift(a, axes=ax)
 
     M = int(fix(N / 2))
     shape_ph = [1] * f.ndim
@@ -88,7 +89,7 @@ def bmIDF(f, k, nZero=None, nDim=None, gridType=None, nargout=1):
         x = np.arange(-M, N - M) * dX
         outGridType = 2
     elif gridType == 4:
-        iFf = mixed(np.multiply, scipy.fft.fftshift(scipy.fft.ifft(f, axis=ax, workers=-1), axes=ax), N * dK)
+        iFf = mixed(np.multiply, fftshift(scipy.fft.ifft(f, axis=ax, workers=-1), axes=ax), N * dK)
         myPhase = np.reshape(np.arange(-M, N - M).astype(np.float64), shape_ph)
         iFf = np.exp(1j * 2 * np.pi * k[0] * dX * myPhase) * iFf
         x = np.arange(-M, N - M) * dX

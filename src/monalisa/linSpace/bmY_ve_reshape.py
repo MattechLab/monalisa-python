@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from monalisa._mat import col, msize, vec
+from monalisa._mat import col, msize, repmat, vec
 
 
 def bmY_ve_reshape(ve, y_size):
@@ -20,12 +20,12 @@ def bmY_ve_reshape(ve, y_size):
         rawFlag = True
         nPt, nCh = nCh, nPt
     if s1 == 1 and s2 == 1:
-        ve_out = ve.reshape(1, 1) * np.ones((nPt, nCh))
+        ve_out = ve.reshape(1, 1) * np.ones((nPt, nCh), order="F")
         ve_out = ve_out.astype(np.result_type(ve.dtype, np.float32) if ve.dtype == np.float32 else np.float64)
     elif s1 > 1 and s2 == 1:
-        ve_out = np.tile(np.reshape(ve, (-1, 1), order="F"), (1, nCh))
+        ve_out = repmat(np.reshape(ve, (-1, 1), order="F"), 1, nCh)
     elif s1 == 1 and s2 > 1:
-        ve_out = np.tile(col(ve), (1, nCh))
+        ve_out = repmat(col(ve), 1, nCh)
     elif not (s1 == nPt) or not (s2 == nCh):
         ve_out = ve.T
     else:

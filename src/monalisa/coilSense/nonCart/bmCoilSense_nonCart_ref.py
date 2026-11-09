@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from monalisa._mat import isempty, numel, single, vec
+from monalisa._mat import isempty, numel, repmat, single, vec
 from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
 from monalisa.arrayUtility.bmColReshape import bmColReshape
 from monalisa.fourier123.map_function.nonCartesian.bmNasha import bmNasha
@@ -24,7 +24,7 @@ def bmCoilSense_nonCart_ref(y, Gn, m, nSmooth_phi=None):
     nCh = int(numel(y) / nPt)
     m = np.reshape(np.asarray(m, dtype=bool), shape, order="F")
     m_neg = ~m
-    m_neg_rep = np.tile(~np.reshape(m, (-1, 1), order="F"), (1, nCh))
+    m_neg_rep = repmat(~np.reshape(m, (-1, 1), order="F"), 1, nCh)
 
     x_ch = np.array(single(bmColReshape(bmNasha(y, Gn, N_u), N_u)))
     x_ch[m_neg_rep] = 1

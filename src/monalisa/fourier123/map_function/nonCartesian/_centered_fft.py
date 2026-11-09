@@ -1,6 +1,6 @@
 """Centered FFT along the first axes, as MATLAB fftshift(fft(ifftshift(x, n), [], n), n) per axis."""
 
-import scipy.fft
+from monalisa._fft import fftshift, ifftshift
 
 
 def centered_fft(x, n_axes, transform):
@@ -11,7 +11,7 @@ def centered_fft(x, n_axes, transform):
     transform (bit for bit), with two copies instead of two per axis.
     """
     axes = tuple(range(n_axes))
-    x = scipy.fft.ifftshift(x, axes=axes)
+    x = ifftshift(x, axes)
     for n in axes:
         x = transform(x, axis=n, workers=-1, overwrite_x=True)
-    return scipy.fft.fftshift(x, axes=axes)
+    return fftshift(x, axes)

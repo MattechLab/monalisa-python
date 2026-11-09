@@ -25,9 +25,7 @@ def bmShanna_MATLAB(x, G, KFC, n_u):
     x_size_2 = msize(x, 2)
     nCh = msize(KFC, 2) if x_size_2 == 1 else x_size_2
     _check(x, G, KFC, N_u, n_u, nCh)
-    if x_size_2 < nCh:
-        x = np.tile(x, (1, nCh))
-    x = x * KFC
+    x = x * KFC  # MATLAB repmat(x, [1, nCh]) .* KFC: the same products, by broadcasting
     if not np.array_equal(N_u, n_u):
         x = bmBlockReshape(x, n_u)
         x = bmImZeroFill(x, N_u, n_u, "complex_single")

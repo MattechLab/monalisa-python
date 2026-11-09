@@ -55,7 +55,7 @@ def bmCoilSense_nonCart_secondary(y, C, y_ref, C_ref, Gn, Gu, Gut, ve, nIter, di
         Ad = bmShanna(d, Gu, KF * C, N_u, "MATLAB")
         lam = np.real(_dot(Ad, mixed(np.multiply, ve, v))) / np.real(_dot(Ad, mixed(np.multiply, ve, Ad)))
         x = x - lam * d
-        d_C = 2 * np.tile(np.conj(x), (1, nCh)) * w
+        d_C = 2 * np.conj(x) * w  # MATLAB 2 * repmat(conj(x), [1, nCh]) .* w: same products
         d_C[:, 0] = myZero
         Ad_C = bmShanna(x, Gu, KF * d_C, N_u, "MATLAB")
         num = np.real(_dot(Ad_C, mixed(np.multiply, ve, v)))

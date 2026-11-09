@@ -122,6 +122,24 @@ def reshape(x, *shape) -> np.ndarray:
     return np.reshape(np.asarray(x), dims, order="F")
 
 
+def repmat(x, *reps) -> np.ndarray:
+    """MATLAB ``repmat(x, reps)`` in column order (``np.tile`` values, column-major memory).
+
+    ``reps`` is given as a list or as arguments; ``x`` and ``reps`` are padded with trailing
+    singleton dimensions as in MATLAB."""
+    if len(reps) == 1:
+        reps = reps[0]
+    reps = [int(r) for r in np.ravel(reps)]
+    x = np.asarray(x)
+    nd = max(x.ndim, len(reps), 2)
+    shape = list(x.shape) + [1] * (nd - x.ndim)
+    reps = reps + [1] * (nd - len(reps))
+    # out[i + s*p, ...] = x[i, ...]: a (s0, r0, s1, r1, ...) array in column order, reshaped
+    out = np.empty([n for s, r in zip(shape, reps, strict=True) for n in (s, r)], dtype=x.dtype, order="F")
+    out[...] = np.reshape(x, [n for s in shape for n in (s, 1)], order="F")
+    return np.reshape(out, [s * r for s, r in zip(shape, reps, strict=True)], order="F")
+
+
 def vec(x, dtype=np.float64) -> np.ndarray:
     """Flatten a size/parameter argument (``N_u(:)'``) to a 1-D array."""
     return np.asarray(x, dtype=dtype).ravel(order="F")
@@ -174,7 +192,8 @@ def mixed(op, a, b):
         # same values as single(op(double(a), double(b))): the ufunc computes in double, in
         # buffered chunks, and rounds into the single output without full-size double temporaries
         cplx = np.iscomplexobj(a) or np.iscomplexobj(b)
-        out = np.empty(np.broadcast_shapes(a.shape, b.shape), dtype=np.complex64 if cplx else np.float32)
+        out = np.empty(np.broadcast_shapes(a.shape, b.shape), dtype=np.complex64 if cplx else np.float32,
+                       order="F")  # column order, like MATLAB arrays
         op(a, b, out=out, dtype=np.complex128 if cplx else np.float64, casting="unsafe")
         return out
     res = op(double(a), double(b))
