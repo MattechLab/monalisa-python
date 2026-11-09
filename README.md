@@ -47,6 +47,10 @@ pip install -e ".[dev,io]"            # + pytest, ruff (development)
 
 The package installs as `monalisa-python` and is imported as `monalisa`.
 
+On Linux with X11, the Qt windows (napari viewer, interactive steps) also need a system library:
+`sudo apt install libxcb-cursor0` (Debian, Ubuntu) or `sudo dnf install xcb-util-cursor` (Fedora).
+Without it monalisa raises an error saying so; the notebook viewer works without it.
+
 ## Viewing images and interactive steps
 
 `bmImage` shows 2D to 5D images (or a list of frames) like the MATLAB viewer, with the MATLAB

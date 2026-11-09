@@ -63,6 +63,16 @@ def test_bmImage_napari(qtbot):
         viewer.close()
 
 
+def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
+    # Qt >= 6.5 aborts the process (and the Jupyter kernel) without libxcb-cursor0
+    from monalisa.imDisp import _qt
+
+    monkeypatch.setattr(_qt, "_needs_xcb", lambda: True)
+    monkeypatch.setattr(_qt, "_has_xcb_cursor", lambda: False)
+    with pytest.raises(_qt.NoDisplayError, match="libxcb-cursor0"):
+        ml.bmImage(np.zeros((4, 4, 4)), backend="napari")
+
+
 def test_bmImage_render3d(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)

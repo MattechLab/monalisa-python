@@ -12,7 +12,7 @@ import numpy as np
 
 from monalisa._mat import iscell, squeeze
 from monalisa.arrayUtility.bmCell2Array import bmCell2Array
-from monalisa.imDisp._qt import NoDisplayError, has_display, in_jupyter
+from monalisa.imDisp._qt import check_display, in_jupyter
 
 AXIS_LABELS = ("x", "y", "z", "t", "u")
 
@@ -82,9 +82,7 @@ def bmImage(argImage, *, name: str | None = None, backend: str | None = None, bl
     if backend != "napari":
         raise ValueError(f"bmImage: unknown backend {backend!r} (napari or notebook)")
 
-    if not has_display():
-        raise NoDisplayError("bmImage needs a display for the napari window (none found). "
-                             "Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
+    check_display("Use backend='notebook' in Jupyter, or save the image and view it elsewhere.")
     import napari  # creates the Qt application and, in IPython / Jupyter, starts its Qt event loop
 
     if viewer is None:
