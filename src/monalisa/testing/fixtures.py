@@ -119,7 +119,9 @@ def from_matlab(x, role: str = "input"):
     """
     if isinstance(x, mat_struct):
         fields = {f: from_matlab(getattr(x, f), role) for f in x._fieldnames}
-        cls = fields.pop("mlpClass", None)
+        cls = fields.pop("matlabClass", None)
+        if cls is None:  # recordings made before the capture tools were renamed
+            cls = fields.pop("mlpClass", None)
         if cls is not None:
             conv = OBJECT_CONVERTERS.get(cls)
             if conv is None:

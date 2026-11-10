@@ -6,9 +6,9 @@ from scipy.ndimage import gaussian_filter, map_coordinates
 
 pytest.importorskip("SimpleITK")
 
-from monalisa.imReg._demons import _imresize, imregdemons  # noqa: E402
-from monalisa.imReg.m.bmImDeformFieldChain_imRegDemons23 import bmImDeformFieldChain_imRegDemons23  # noqa: E402
-from monalisa.imReg.m.bmImDeformFieldSheet_imRegDemons23 import bmImDeformFieldSheet_imRegDemons23  # noqa: E402
+from monalisa.registration._demons import _imresize, imregdemons  # noqa: E402
+from monalisa.registration._im_deform_field_chain_im_reg_demons23 import im_deform_field_chain_im_reg_demons23  # noqa: E402
+from monalisa.registration._im_deform_field_sheet_im_reg_demons23 import im_deform_field_sheet_im_reg_demons23  # noqa: E402
 
 
 def _blobs(shape, seed=0):
@@ -76,15 +76,15 @@ def test_chain_wrapper_shapes():
         x[i, 0] = (_warp(base, d) * (1 + 0.5j)).astype(np.complex64)
     mask = np.zeros(n_u, bool)
     mask[4:-4, 4:-4] = True
-    DF, im_out = bmImDeformFieldChain_imRegDemons23(x, np.array([n_u], float), "curr_to_prev", 20, 1, None,
-                                                    mask, 2, nargout=2)
+    DF, im_out = im_deform_field_chain_im_reg_demons23(x, np.array([n_u], float), "curr_to_prev", 20, 1, None,
+                                                       mask, 2, nargout=2)
     assert DF.shape == (3, 1) and im_out.shape == (3, 1)
     for v, im in zip(DF.flat, im_out.flat, strict=True):
         assert v.shape == (2, 48 * 40) and v.dtype == np.float64
         assert im.shape == tuple(n_u) and im.dtype == np.float32
         assert np.sqrt((v**2).sum(0)).max() <= 2 + 1e-9  # maxPixDisplacement
         assert not v[:, ~mask.ravel(order="F")].any()  # masked
-    first = bmImDeformFieldChain_imRegDemons23(x, n_u, "curr_to_first", 10, 1, None)
+    first = im_deform_field_chain_im_reg_demons23(x, n_u, "curr_to_first", 10, 1, None)
     assert first[0, 0] is None and first[1, 0].shape == (2, 48 * 40)
 
 
@@ -93,7 +93,7 @@ def test_sheet_wrapper_shapes():
     x = np.empty((2, 3), dtype=object)
     for k in range(6):
         x.flat[k] = _blobs(n_u, seed=k % 2).astype(np.float32)
-    DF1, DF2, im1, im2 = bmImDeformFieldSheet_imRegDemons23(x, n_u, "curr_to_next", [8, 8], 0, None, nargout=4)
+    DF1, DF2, im1, im2 = im_deform_field_sheet_im_reg_demons23(x, n_u, "curr_to_next", [8, 8], 0, None, nargout=4)
     for c in (DF1, DF2, im1, im2):
         assert c.shape == (2, 3)
     assert DF1[0, 0].shape == (2, 32 * 32) and im2[1, 2].dtype == np.float32

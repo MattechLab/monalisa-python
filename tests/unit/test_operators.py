@@ -18,8 +18,8 @@ def _radial_2d(N=64, nLine=48, N_u=(64, 64), FoV=240.0):
 @pytest.fixture(scope="module")
 def setup():
     t, N_u, dK_u = _radial_2d()
-    ve = ml.bmVolumeElement(t, "voronoi_full_radial2")
-    Gn, Gu, Gut = ml.bmTraj2SparseMat(t, ve, N_u, dK_u)
+    ve = ml.volume_element(t, "voronoi_full_radial2")
+    Gn, Gu, Gut = ml.traj_to_sparse_mat(t, ve, N_u, dK_u)
     return t, ve, N_u, dK_u, Gn, Gu, Gut
 
 
@@ -35,11 +35,11 @@ def test_sparse_vec_matches_scipy(setup):
     for G in (Gn, Gu, Gut):
         v = (rng.standard_normal((int(G.r_size), 3)) + 1j * rng.standard_normal((int(G.r_size), 3)))
         v = v.astype(np.complex64)
-        w = ml.bmSparseMat_vec(G, v, "omp", "complex", False)
+        w = ml.sparse_mat_vec(G, v, "omp", "complex", False)
         ref = _to_scipy(G) @ v.astype(np.complex128)
         assert w.dtype == np.complex64
         assert np.linalg.norm(w - ref) / np.linalg.norm(ref) < 1e-6
-        wt = ml.bmSparseMat_vec(G, np.ascontiguousarray(v.T), False, "complex", True)
+        wt = ml.sparse_mat_vec(G, np.ascontiguousarray(v.T), False, "complex", True)
         np.testing.assert_array_equal(wt, w.T)
 
 
@@ -54,13 +54,13 @@ def test_shanna_nakatsha_adjoint(setup):
     rng = np.random.default_rng(1)
     n = int(np.prod(N_u))
     C = (rng.standard_normal((n, nCh)) + 1j * rng.standard_normal((n, nCh))).astype(np.complex64)
-    KFC = ml.bmKF(C, N_u, N_u, dK_u, nCh)
-    KFC_conj = ml.bmKF_conj(np.conj(C), N_u, N_u, dK_u, nCh)
+    KFC = ml.kf(C, N_u, N_u, dK_u, nCh)
+    KFC_conj = ml.kf_conj(np.conj(C), N_u, N_u, dK_u, nCh)
     x = (rng.standard_normal((n, 1)) + 1j * rng.standard_normal((n, 1))).astype(np.complex64)
     y = (rng.standard_normal((int(Gu.l_size), nCh)) + 1j * rng.standard_normal((int(Gu.l_size), nCh)))
     y = y.astype(np.complex64)
-    Ax = ml.bmShanna(x, Gu, KFC, N_u, "MATLAB")
-    Aty = ml.bmNakatsha(y, Gut, KFC_conj, True, N_u, "MATLAB")
+    Ax = ml.shanna(x, Gu, KFC, N_u, "MATLAB")
+    Aty = ml.nakatsha(y, Gut, KFC_conj, True, N_u, "MATLAB")
     lhs = np.vdot(y.astype(np.complex128), Ax.astype(np.complex128))
     rhs = np.vdot(Aty.astype(np.complex128), x.astype(np.complex128))
     assert abs(lhs - rhs) / abs(lhs) < 1e-5
@@ -71,4 +71,4 @@ def test_complex_row_mode_with_omp_is_not_implemented(setup):
     *_, Gu, _ = setup
     v = np.ones((2, int(Gu.r_size)), dtype=np.complex64)
     with pytest.raises(NotImplementedError):
-        ml.bmSparseMat_vec(Gu, v, "omp", "complex", True)
+        ml.sparse_mat_vec(Gu, v, "omp", "complex", True)

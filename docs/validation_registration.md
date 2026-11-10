@@ -1,8 +1,9 @@
 # Validation: demons registration and motion-compensated reconstructions
 
 MATLAB's `imregdemons` (Image Processing Toolbox) is replaced by an open-source implementation,
-`monalisa.imReg._demons.imregdemons`, so that the registration wrappers
-`bmImDeformFieldChain_imRegDemons23` and `bmImDeformFieldSheet_imRegDemons23` need no MATLAB
+`monalisa.registration._demons.imregdemons`, so that the registration wrappers
+`im_deform_field_chain_im_reg_demons23` and `im_deform_field_sheet_im_reg_demons23` (MATLAB
+`bmImDeformFieldChain_imRegDemons23`, `bmImDeformFieldSheet_imRegDemons23`) need no MATLAB
 licence.
 
 ## Implementation

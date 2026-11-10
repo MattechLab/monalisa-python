@@ -9,7 +9,7 @@ tutorial 1 data (3D radial phyllotaxis brain scan, 42 channels, Siemens raw data
 
 Both pipelines run coil sensitivity estimation (automatic mask, 5 refinement iterations), binning
 (all lines and 5 s sequential windows), mitosius preparation (normalization with the same fixed ROI
-in place of the interactive `roipoly`), and gridded reconstructions with `bmMathilda`.
+in place of the interactive `roipoly`), and gridded reconstructions with `mathilda` (`bmMathilda`).
 
 | Output | relative L2 | NMSE | SSIM (magnitude) |
 |---|---:|---:|---:|

@@ -3,9 +3,9 @@
 A few functions depend on the moment or on the file system rather than on their arguments. Their
 recordings are replayed after restoring that state:
 
-- ``bmTimeInSecond``: the date and time are rebuilt from the recorded value and the clock is frozen
+- ``time_in_second``: the date and time are rebuilt from the recorded value and the clock is frozen
   at that moment;
-- ``bmCheckDir`` / ``bmCreateDir``: the recorded directories are recreated, as they were at the time
+- ``check_dir`` / ``create_dir``: the recorded directories are recreated, as they were at the time
   of the call, inside the test's temporary directory.
 
 ``prepare`` returns a check to run after the replay (or None).
@@ -39,7 +39,7 @@ def _frozen_clock(rec, tmp_path, monkeypatch):
         def now(tz=None):
             return now
 
-    import monalisa.time.bmTimeInSecond as mod
+    import monalisa.util._time_in_second as mod
 
     monkeypatch.setattr(mod, "dt", SimpleNamespace(datetime=Clock))
     return None
@@ -61,7 +61,7 @@ def _check_dir(rec, tmp_path, monkeypatch):
 
 
 def _create_dir(rec, tmp_path, monkeypatch):
-    # bmMitosius_create only creates missing directories: none of them existed before the call
+    # mitosius_create only creates missing directories: none of them existed before the call
     d = _in_tmp(rec, tmp_path)
 
     def check():

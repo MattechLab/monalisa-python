@@ -15,13 +15,14 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.11",
     "numba>=0.59",
+    "h5py>=3.9",  # MATLAB v7.3 files (mitosius, witness, results)
     "matplotlib>=3.7",
-    "napari[all]>=0.5",  # bmImage viewer and Qt for the interactive dialogs (autoFlag=false)
-    "ipywidgets>=8",  # bmImage in Jupyter notebooks
+    "napari[all]>=0.5",  # show_image viewer and Qt for the interactive dialogs (autoFlag=false)
+    "ipywidgets>=8",  # show_image in Jupyter notebooks
 ]
 
 [project.optional-dependencies]
-io = ["h5py>=3.9", "twixtools", "ismrmrd"]
+io = ["twixtools", "ismrmrd"]  # raw data: Siemens twix, ISMRMRD
 reg = ["SimpleITK>=2.3"]  # demons registration (replaces MATLAB imregdemons)
 test = ["pytest>=8", "pytest-xdist", "pytest-qt"]
 notebook = ["jupyterlab"]  # examples/tutorial_1/tutorial_1.ipynb

@@ -2,6 +2,7 @@
 
 Behaviours of the MATLAB code that look unintended. The Python port reproduces them (parity first)
 unless stated otherwise; they should be reported/fixed upstream and then in both code bases.
+Functions are named as in MATLAB; their Python names are in [renaming.md](renaming.md).
 
 | Function | Issue | Python port |
 |---|---|---|

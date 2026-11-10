@@ -228,7 +228,7 @@ def is_single(x) -> bool:
 
 
 def imsize_ints(res):
-    """``(im, imDim, imSize)`` from ``bmImReshape`` with Python ints for indexing."""
+    """``(im, imDim, imSize)`` from ``im_reshape`` with Python ints for indexing."""
     im, imDim, imSize = res[:3]
     return im, int(imDim), tuple(int(s) for s in np.ravel(imSize))
 

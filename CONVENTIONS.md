@@ -1,35 +1,56 @@
 # Porting conventions
 
-These rules make the Python port numerically comparable to MATLAB, function by function. They
-apply to the *faithful layer* (`monalisa/<upstream folder>/bmFoo.py`). A more Pythonic API can be
-added on top later without changing these modules.
+These rules make the Python port numerically comparable to MATLAB, function by function, while
+the names and the package layout follow Python conventions.
 
 ## Files and names
 
-- `src/<path>/bmFoo.m` upstream → `src/monalisa/<path>/bmFoo.py`, defining `bmFoo`. Same name, same
-  folder structure (including `m/`, `map_function/...`), so that upstream changes map 1:1.
-  Folder names that are Python keywords get a trailing underscore (`mriRecon/class` →
-  `mriRecon/class_`).
-- Module docstring: `"""Port of src/<path>/bmFoo.m."""`. The function docstring says what it does.
-- MEX kernels become numba functions in a private module next to the MATLAB wrapper, e.g.
-  `gridding123/mex/_gridder_n2u_leight.py`, keeping the MEX function names.
-- Internal imports are explicit: `from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape`.
-  Users can write `import monalisa as ml; ml.bmMathilda(...)` (lazy lookup).
+- **Names** follow [PEP 8](https://peps.python.org/pep-0008/#naming-conventions) without the
+  authors' initials of the upstream names (`bm`, `mle`, `dh`): functions and methods in
+  `snake_case`, classes in `CapWords`, a `2` between words read as *to*
+  (`bmCoilSense_nonCart_data` → `coil_sense_non_cart_data`, `bmTraj2SparseMat` →
+  `traj_to_sparse_mat`, `mleSiemensReader` → `SiemensReader`). The rule is
+  `tools/renaming_table.py:python_name`; a name that departs from it (typo, one-letter name,
+  `N_u`/`n_u` lost in lower case) needs a reason in `REASONS` there. The reconstruction methods
+  keep their Monalisa names (`mathilda`, `sensa`, `teva_morphosia_chain`).
+- **Subpackages by topic** (`monalisa.recon`, `monalisa.io`, `monalisa.fourier`, ...; list in
+  README.md). Each function or class has its own private module named after it:
+  `src/<path>/bmFoo.m` upstream → `src/monalisa/<subpackage>/_foo.py` defining `foo`. The
+  subpackage `__init__.py` imports it and lists it in `__all__`; the top-level package re-exports
+  all of them (`import monalisa as ml; ml.mathilda(...)`).
+- **The link to upstream** is `monalisa.MATLAB_NAMES` (`src/monalisa/_upstream.py`):
+  `"bmFoo": "subpackage.foo"` for every ported function. The MATLAB recordings are stored and
+  replayed under the MATLAB names through it, and `docs/renaming.md` is generated from it
+  (`python tools/renaming_table.py`). A new port adds its line there and its import to the
+  subpackage and top-level `__init__.py`; `tests/unit/test_api.py` checks that the three agree,
+  that the names follow the rule and that the table is up to date.
+- Module docstring: `"""Port of src/<path>/bmFoo.m."""` (the upstream file, used for the table).
+  The function docstring says what it does. No authorship in the source files: authors are
+  credited in README.md and recorded in the git history.
+- MEX kernels become numba functions in a private module next to their wrapper, e.g.
+  `gridding/_gridder_kernels.py`.
+- Internal imports go to the private modules, never to a subpackage
+  (`from monalisa.array._block_reshape import block_reshape`), so that the subpackages can import
+  each other in any order.
 
 ## Arguments and outputs
 
+- Argument names, struct fields and object properties keep their MATLAB names (`N_u`, `dK_u`,
+  `nCh`, `acquisitionParams.nShot_off`): they are the notation of the Monalisa papers, `N_u`
+  (grid size) and `n_u` (image size) are different quantities, and fields are compared with the
+  MATLAB recordings. String option values keep the MATLAB values too (`sparseType='bmSparseMat'`).
 - Same positional order as MATLAB. `varargin` options become keyword arguments with default
-  `None`, in the order MATLAB unpacks them (`bmVarargin`).
+  `None`, in the order MATLAB unpacks them (`util.varargin`).
 - MATLAB `[]` passed as an argument is `None`. Functions returning `[]` return `None`.
 - Several outputs are returned as a tuple. If MATLAB changes behaviour or cost with `nargout`,
-  the Python function takes a keyword `nargout` (e.g. `bmTraj_nLine(t, nargout=4)`) and returns
+  the Python function takes a keyword `nargout` (e.g. `traj_n_line(t, nargout=4)`) and returns
   exactly that many values (a single value when `nargout == 1`).
 - Functions never modify their input arrays (MATLAB passes by value). The replay test checks it.
 - Interactive steps (`autoFlag = false`: metadata dialogs, coil-mask thresholds and box) are Qt
   dialogs (`qtpy`, matplotlib canvases) that return the same values as MATLAB, and every one has
   a parameter that skips it. The Qt classes live in private modules (`_metadata_dialog.py`),
   built on first use, so that importing a function never needs a display. The image viewers
-  (`bmImage`) are replaced by napari rather than ported line by line.
+  (`bmImage`) are replaced by napari (`show_image`) rather than ported line by line.
 - Progress messages printed by MATLAB (`disp`) are printed through `monalisa._mat.disp`.
 
 ## Arrays

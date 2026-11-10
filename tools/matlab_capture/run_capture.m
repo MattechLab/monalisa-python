@@ -16,7 +16,7 @@ here = fileparts(mfilename('fullpath'));
 % one instrumented copy per scenario, so that scenarios can run concurrently
 instrDir = fullfile(here, '..', '..', 'build', 'matlab_instrumented', scenario, 'src');
 if opt.reinstrument || ~exist(instrDir, 'dir')
-    n = mlp_instrument(fullfile(upstreamRoot, 'src'), instrDir);
+    n = capture_instrument(fullfile(upstreamRoot, 'src'), instrDir);
     fprintf('Instrumented %d functions in %s\n', n, instrDir);
 end
 
@@ -35,8 +35,8 @@ if exist(outDir, 'dir')
 end
 mkdir(outDir);
 
-global MLP_STATE
-MLP_STATE = struct('enabled', true, ...
+global CAPTURE_STATE
+CAPTURE_STATE = struct('enabled', true, ...
                    'dir', outDir, ...
                    'scenario', scenario, ...
                    'upstream', strtrim(commit), ...
@@ -59,18 +59,18 @@ try
     feval(['scenario_', scenario], ctx);
 catch scenarioError
 end
-MLP_STATE.enabled = false;
+CAPTURE_STATE.enabled = false;
 
 fid = fopen(fullfile(outDir, 'capture_log.csv'), 'w');
 fprintf(fid, 'func,call,bytes,status,caller\n');
-fprintf(fid, '%s\n', MLP_STATE.log{:});
+fprintf(fid, '%s\n', CAPTURE_STATE.log{:});
 fclose(fid);
 
-fns = keys(MLP_STATE.seen);
+fns = keys(CAPTURE_STATE.seen);
 fid = fopen(fullfile(outDir, 'call_counts.csv'), 'w');
 fprintf(fid, 'func,n_calls,n_recorded\n');
 for i = 1:numel(fns)
-    fprintf(fid, '%s,%d,%d\n', fns{i}, MLP_STATE.seen(fns{i}), MLP_STATE.nrec(fns{i}));
+    fprintf(fid, '%s,%d,%d\n', fns{i}, CAPTURE_STATE.seen(fns{i}), CAPTURE_STATE.nrec(fns{i}));
 end
 fclose(fid);
 fprintf('Scenario %s done in %.1f s: %d functions called.\n', scenario, toc(tStart), numel(fns));

@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 import scipy.io as sio
 
-from monalisa.readWrite._mat73 import loadmat73
+from monalisa.io import loadmat73
 from monalisa.testing.metrics import rel_l2, summary
 
 ROOT = Path(__file__).resolve().parents[2]

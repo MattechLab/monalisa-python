@@ -14,7 +14,7 @@ outputs are recorded; the Python function is accepted only when it reproduces th
                        ▼
           fixtures/matlab/<scenario>/<function>/call_NNN.mat
                        │
-   3. port ───────────►│ src/monalisa/<folder>/bmFoo.py   (CONVENTIONS.md; human or coding agent)
+   3. port ───────────►│ src/monalisa/<subpackage>/_foo.py + MATLAB_NAMES   (CONVENTIONS.md)
                        │
    4. verify ─────────►│ tests/parity (replay)  +  unit / property tests
                        │
@@ -31,15 +31,16 @@ closure of the demo pipelines (tutorial 1, static/chain/sheet reconstructions): 
 
 ## 2. Golden capture (MATLAB side)
 
-`mlp_instrument.m` copies the upstream `src/` and, for each function file `NAME.m`, renames the
+`capture_instrument.m` copies the upstream `src/` and, for each function file `NAME.m`, renames the
 main function to `NAME__orig` and writes a wrapper `NAME.m` that
 
-1. decides whether to record the call (`mlp_should_record`: the first calls, then calls whose input
+1. decides whether to record the call (`capture_should_record`: the first calls, then calls whose input
    signature — classes and sizes — is new, up to a maximum per function),
 2. snapshots the inputs *before* the call (handle objects such as `bmSparseMat` may be mutated),
 3. forwards to `NAME__orig` with the caller's `nargout`,
 4. saves inputs, outputs, `nargin`, `nargout`, caller and upstream commit to a `-v7` MAT-file
-   (`mlp_record`); objects are converted to structs with a `mlpClass` field (`mlp_to_plain`).
+   (`capture_record`); objects are converted to structs with a `matlabClass` field
+   (`capture_to_plain`).
 
 Recursive and nested calls are recorded too, so one scenario produces fixtures for every function
 it reaches. Scenarios (`tools/matlab_capture/scenarios/scenario_*.m`) run the demo pipelines
@@ -54,15 +55,24 @@ Run: `matlab -batch "addpath('tools/matlab_capture'); run_capture('<scenario>', 
 
 ## 3. Port
 
-Each function is translated following [CONVENTIONS.md](../CONVENTIONS.md): same name, arguments,
+Each function is translated following [CONVENTIONS.md](../CONVENTIONS.md): same arguments,
 shapes (column-major) and precision; MEX kernels become numba functions with the same loop order.
 The translation can be written by hand or by a coding agent; in both cases the context is the
 MATLAB source, its callees' ports, the conventions, and the recorded calls.
 
+The Python name follows the naming rule (`tools/renaming_table.py:python_name`: author prefix
+removed, PEP 8 case) and is registered in `monalisa.MATLAB_NAMES` (`"bmFoo": "subpackage.foo"`).
+This mapping is the only link between the two code bases: the replay finds the port of a
+recorded MATLAB function through it, `PORTING_STATUS.md` and [renaming.md](renaming.md) are
+generated from it, and an upstream change to `bmFoo.m` points to the Python function to update.
+The first ports kept the MATLAB names and folders; they were renamed in one pass (moves with
+`git mv`, so `git log --follow` shows each file's history) once the parity tests covered them.
+
 ## 4. Verify
 
 - **Replay** (`tests/parity/test_matlab_parity.py`): every recording is loaded, converted to the
-  Python conventions (`monalisa.testing.from_matlab`), replayed against the ported function and
+  Python conventions (`monalisa.testing.from_matlab`), replayed against the ported function
+  (`monalisa.find_function(<MATLAB name>)`) and
   compared output by output (`monalisa.testing.compare`): sizes and precision class must match,
   integers/logicals exactly, floating point within the tolerances of `tests/parity/tolerances.py`
   (relative L2 error and maximum error relative to the reference maximum). The replay also fails
@@ -90,26 +100,26 @@ ones, and re-port the functions whose source or recorded behaviour changed.
   `mat_dtype=False` returns integer storage types for integer-valued doubles; the fixture loader
   reads both and merges them.
 - MATLAB `interpn(..., 'cubic')` on uniform grids is Keys cubic convolution (a = −0.5) with Keys'
-  boundary extrapolation, reproduced to 6e-8 in `bmImResize`.
+  boundary extrapolation, reproduced to 6e-8 in `im_resize`.
 - Some upstream MEX files are compiled with `-Ofast`: the Laplace kernels divide by 7 (or 5, 3) as a
   multiplication by the float reciprocal; reproducing it brings the 1000-iteration Laplace solver
   within 1e-5 of MATLAB.
 - Single-precision inner products over ~1e5 terms differ by ~1e-5 between MKL (MATLAB) and OpenBLAS
   (NumPy) because of the summation order; this is the only tolerance relaxation of the solvers'
-  building blocks (`bmEuclideProd`), and the solver outputs themselves match at 1e-5.
-- MATLAB handle objects (`bmWitnessInfo`, `bmSparseMat`, readers) are mutable by design; the replay
+  building blocks (`euclidean_prod`), and the solver outputs themselves match at 1e-5.
+- MATLAB handle objects (`WitnessInfo`, `SparseMat`, readers) are mutable by design; the replay
   skips them in its input-mutation check. Iterative solvers write witness files to the working
   directory, so every replay runs in a temporary directory.
 - `fitgmdist` (random k-means++ start) is replaced by a deterministic EM; thresholds are rounded to
   integers upstream, so the automatic coil-sensitivity mask is identical.
 - MATLAB's `imregdemons` (demons registration, Image Processing Toolbox) is replaced by SimpleITK's
   `DemonsRegistrationFilter` (same Thirion update, thresholds and field smoothing) inside a
-  reproduction of MATLAB's multiresolution pyramid (`monalisa.imReg._demons`). The pyramid and
+  reproduction of MATLAB's multiresolution pyramid (`monalisa.registration._demons`). The pyramid and
   the final warp match MATLAB exactly; ITK's iterations differ in border handling and Gaussian
   kernel, so the fields are validated on quality: [validation_registration.md](validation_registration.md).
 - numba 0.68: calling a `parallel=True` kernel from inside another `@njit` function crashed
   (segmentation fault) unless the inner kernel had been compiled on its own first. Loops that call
-  parallel kernels are therefore plain Python (`laplace_solve`).
+  parallel kernels are therefore plain Python (`image._laplace.laplace_solve`).
 - Speed on large 3D problems is limited by memory copies, not by the FFTs: shifting all axes at
   once around the 1-D FFTs, a complex sparse product without real/imaginary copies, and `mixed`
   computing in double by chunks (no full-size double temporaries) gave 2.3× (Sensa) and 1.4×
@@ -131,8 +141,8 @@ ones, and re-port the functions whose source or recorded behaviour changed.
 | Binning masks | identical |
 | Coil sensitivity, normalization, gridded reconstructions | `tests/e2e/test_tutorial_1.py` report |
 | Gridded reconstructions `x0`, `x1` (80³, 42 coils) | rel L2 ≈ 4e-5 |
-| Iterative SENSE `bmSensa`, 8 bins × 30 iterations | rel L2 6–8e-5 |
-| Compressed sensing `bmTevaMorphosia_chain`, 8 bins × 30 iterations | rel L2 6e-5 |
+| Iterative SENSE `sensa`, 8 bins × 30 iterations | rel L2 6–8e-5 |
+| Compressed sensing `teva_morphosia_chain`, 8 bins × 30 iterations | rel L2 6e-5 |
 
 MATLAB references of the iterative reconstructions: `tools/matlab_capture/validation/tutorial_1_iterative_reference.m`
 (from the MATLAB outputs of `scenario_tutorial_recon`).

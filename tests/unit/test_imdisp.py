@@ -10,12 +10,12 @@ import pytest  # noqa: E402
 pytest.importorskip("pytestqt")
 
 import monalisa as ml  # noqa: E402
-import monalisa.imDisp._qt as qt  # noqa: E402
-from monalisa.coilSense.automatic import _threshold_dialog, selectROI  # noqa: E402
-from monalisa.imDisp import roipoly  # noqa: E402
-from monalisa.imDisp.bmImage import image_data, view_order  # noqa: E402
-from monalisa.mriRecon.class_.bmMriAcquisitionParam import bmMriAcquisitionParam  # noqa: E402
-from monalisa.rawDataReader import _metadata_dialog  # noqa: E402
+import monalisa.display._qt as qt  # noqa: E402
+from monalisa.coil import _select_roi, _threshold_dialog  # noqa: E402
+from monalisa.display import _roipoly  # noqa: E402
+from monalisa.display._show_image import image_data, view_order  # noqa: E402
+from monalisa.io import _metadata_dialog  # noqa: E402
+from monalisa.io._mri_acquisition_param import MriAcquisitionParam  # noqa: E402
 
 
 def accept_with(action=None):
@@ -29,7 +29,7 @@ def accept_with(action=None):
     return run
 
 
-# --- bmImage -----------------------------------------------------------------------------------
+# --- show_image -----------------------------------------------------------------------------------
 
 
 def test_image_data_conversions():
@@ -47,24 +47,24 @@ def test_view_order_shows_matlab_slices():
     assert view_order(5) == (4, 3, 2, 0, 1)
 
 
-def test_bmImage_napari(qtbot):
+def test_show_image_napari(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
     try:
         x = np.random.default_rng(0).random((6, 7, 8, 2))
-        v = ml.bmImage(x, viewer=viewer, name="x")
+        v = ml.show_image(x, viewer=viewer, name="x")
         assert v is viewer
         layer = viewer.layers["x"]
         assert layer.data.shape == (6, 7, 8, 2)
         assert viewer.dims.order == (3, 2, 0, 1)
         assert viewer.dims.displayed == (0, 1)
         assert tuple(viewer.dims.axis_labels) == ("x", "y", "z", "t")
-        from monalisa.imDisp.bmImage import _grid
+        from monalisa.display._show_image import _grid
 
         assert not _grid(viewer).enabled
-        ml.bmImage(x + 1, viewer=viewer, name="x2")  # added to the window: side by side, in order
+        ml.show_image(x + 1, viewer=viewer, name="x2")  # added to the window: side by side, in order
         assert _grid(viewer).enabled
-        ml.bmImage(x - 1, viewer=viewer, name="x3")
+        ml.show_image(x - 1, viewer=viewer, name="x3")
         assert [_grid(viewer).position(i, viewer.layers) for i in range(3)] == [(0, 0), (0, 1), (0, 2)]
         assert viewer.title == "x  |  x2  |  x3"
     finally:
@@ -89,7 +89,7 @@ def _click(ov, view, position, drag=False):
 
 def test_orthogonal_layout(qtbot):
     pytest.importorskip("napari")
-    from monalisa.imDisp._ortho import OrthoViewer
+    from monalisa.display._ortho import OrthoViewer
 
     x = np.random.default_rng(0).random((10, 12, 14, 3))
     ov = OrthoViewer(x, name="x")
@@ -125,23 +125,23 @@ def test_orthogonal_layout(qtbot):
     with pytest.raises(ValueError, match="3D"):
         OrthoViewer(np.zeros((4, 4)))
     with pytest.raises(ValueError, match="3D"):
-        ml.bmImage(np.zeros((4, 4)), view="ortho")
+        ml.show_image(np.zeros((4, 4)), view="ortho")
 
 
 def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
     # Qt >= 6.5 aborts the process (and the Jupyter kernel) without libxcb-cursor0
-    from monalisa.imDisp import _qt
+    from monalisa.display import _qt
 
     monkeypatch.setattr(_qt, "_needs_xcb", lambda: True)
     monkeypatch.setattr(_qt, "_has_xcb_cursor", lambda: False)
     with pytest.raises(_qt.NoDisplayError, match="libxcb-cursor0"):
-        ml.bmImage(np.zeros((4, 4, 4)), view="window")
+        ml.show_image(np.zeros((4, 4, 4)), view="window")
 
 
 def test_gtk_theme_avoided_with_conda_glib(monkeypatch, tmp_path):
     # Qt's GTK3 theme loads the system GLib / HarfBuzz; with conda's already loaded (matplotlib),
     # Qt segfaults on start (kernel dies), so a conda environment gets Qt's built-in theme
-    from monalisa.imDisp import _qt
+    from monalisa.display import _qt
 
     monkeypatch.setattr(_qt.sys, "platform", "linux")
     monkeypatch.setattr(_qt.sys, "prefix", str(tmp_path))
@@ -158,40 +158,40 @@ def test_gtk_theme_avoided_with_conda_glib(monkeypatch, tmp_path):
     assert env == {"QT_QPA_PLATFORMTHEME": "gtk3"}
 
 
-def test_bmImage_render3d(qtbot):
+def test_show_image_render3d(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
     try:
         x = np.random.default_rng(0).random((6, 7, 8, 2))
-        ml.bmImage(x, "3d", viewer=viewer, name="x")
+        ml.show_image(x, "3d", viewer=viewer, name="x")
         assert viewer.dims.ndisplay == 3
         assert viewer.dims.displayed == (2, 0, 1)  # volume of x, y, z; slider on t
     finally:
         viewer.close()
     with pytest.raises(ValueError, match="unknown view"):
-        ml.bmImage(x, view="3D slices")
+        ml.show_image(x, view="3D slices")
     with pytest.raises(ValueError, match="viewer="):
-        ml.bmImage(x, view="inline", viewer=viewer)
+        ml.show_image(x, view="inline", viewer=viewer)
 
 
-def test_bmImage_old_keywords(qtbot):
+def test_show_image_old_keywords(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
     try:
         x = np.random.default_rng(0).random((6, 7, 8))
         with pytest.warns(FutureWarning, match="view='3d', contrast=\\(low, high\\)"):
-            ml.bmImage(x, viewer=viewer, render3d=True, contrast_limits=(0.1, 0.9))
+            ml.show_image(x, viewer=viewer, render3d=True, contrast_limits=(0.1, 0.9))
         assert viewer.dims.ndisplay == 3
         assert tuple(viewer.layers[-1].contrast_limits) == (0.1, 0.9)
     finally:
         viewer.close()
     with pytest.raises(TypeError, match="colour"):
-        ml.bmImage(x, colour="red")
+        ml.show_image(x, colour="red")
 
 
 def test_notebook_viewer_slices():
     pytest.importorskip("ipywidgets")
-    from monalisa.imDisp._notebook import NotebookViewer
+    from monalisa.display._notebook import NotebookViewer
 
     x = np.arange(4 * 5 * 6 * 2, dtype=float).reshape(4, 5, 6, 2)
     w = NotebookViewer(x)
@@ -216,7 +216,7 @@ def test_roipoly_from_vertices():
 
 
 def test_roipoly_dialog(qtbot, monkeypatch):
-    monkeypatch.setattr(roipoly, "run_dialog", accept_with(lambda d: (d.set_vertices([3, 8, 8, 3], [2, 2, 5, 5]),
+    monkeypatch.setattr(_roipoly, "run_dialog", accept_with(lambda d: (d.set_vertices([3, 8, 8, 3], [2, 2, 5, 5]),
                                                                        d.confirm())))
     m = ml.roipoly(np.random.default_rng(1).random((10, 12)))
     assert m.sum() == 24 and m[1:5, 2:8].all()
@@ -226,7 +226,7 @@ def test_roipoly_dialog(qtbot, monkeypatch):
 
 
 def _node():
-    n = bmMriAcquisitionParam(None)
+    n = MriAcquisitionParam(None)
     n.N, n.nLine, n.nShot, n.nSeg, n.nCh, n.nEcho, n.nShot_off = 480.0, 2200.0, 100.0, 22.0, 1.0, 1.0, 13.0
     n.FoV = np.array([[480.0]])
     n.selfNav_flag, n.roosk_flag = True, False
@@ -249,13 +249,13 @@ def test_metadata_confirm_and_cancel(qtbot, monkeypatch):
         dlg.roosk.setChecked(True)
 
     monkeypatch.setattr(qt, "run_dialog", accept_with(edit))
-    node, reconFoV = ml.checkMetadataInteractive(*si, _node(), np.array([[480.0]]))
+    node, reconFoV = ml.check_metadata_interactive(*si, _node(), np.array([[480.0]]))
     assert node.nShot_off == 20 and node.roosk_flag
     np.testing.assert_array_equal(reconFoV, [[240.0]])
     np.testing.assert_array_equal(node.FoV, [[480.0]])
 
     monkeypatch.setattr(qt, "run_dialog", lambda dlg: False)  # Cancel: extracted values
-    node, reconFoV = ml.correctMetadataInteractive(_node(), np.array([[480.0]]))
+    node, reconFoV = ml.correct_metadata_interactive(_node(), np.array([[480.0]]))
     assert node.nShot_off == 13 and not node.roosk_flag
     np.testing.assert_array_equal(reconFoV, [[480.0]])
 
@@ -287,12 +287,12 @@ def test_threshold_dialog(qtbot):
 
 def test_threshold_interactive_returns_choice(qtbot, monkeypatch):
     data = _phantom()
-    auto = ml.thresholdRMS_MIP(100, data, data, [24, 24, 24], True)
+    auto = ml.threshold_rms_mip(100, data, data, [24, 24, 24], True)
     monkeypatch.setattr(qt, "run_dialog", accept_with(lambda d: d.set_threshold("MIP", 50)))
-    th = ml.thresholdRMS_MIP(100, data, data, [24, 24, 24], False)
+    th = ml.threshold_rms_mip(100, data, data, [24, 24, 24], False)
     assert th == (auto[0], 50.0)
     monkeypatch.setattr(qt, "run_dialog", lambda d: False)  # closed: automatic thresholds
-    assert ml.thresholdRMS_MIP(100, data, data, [24, 24, 24], False) == auto
+    assert ml.threshold_rms_mip(100, data, data, [24, 24, 24], False) == auto
 
 
 def test_select_roi(qtbot, monkeypatch):
@@ -305,12 +305,12 @@ def test_select_roi(qtbot, monkeypatch):
         view, sel = dlg.selectors[5]  # MIP along z: columns y, rows x
         assert view == "Along Z" and sel.extents == (4, 16, 6.5, 13)
 
-    monkeypatch.setattr(selectROI, "run_dialog", accept_with(edit))
-    coords = ml.selectROI(data, data, N_u, False, box)
-    expected = selectROI.border_extraction([[6.5, 13], [4, 16], [5, 19]], N_u)
+    monkeypatch.setattr(_select_roi, "run_dialog", accept_with(edit))
+    coords = ml.select_roi(data, data, N_u, False, box)
+    expected = _select_roi.border_extraction([[6.5, 13], [4, 16], [5, 19]], N_u)
     np.testing.assert_array_equal(coords, expected)
-    monkeypatch.setattr(selectROI, "run_dialog", lambda d: False)
-    np.testing.assert_array_equal(ml.selectROI(data, data, N_u, False, box), [[3, 13], [4, 16], [5, 19]])
+    monkeypatch.setattr(_select_roi, "run_dialog", lambda d: False)
+    np.testing.assert_array_equal(ml.select_roi(data, data, N_u, False, box), [[3, 13], [4, 16], [5, 19]])
 
 
 def test_mask_automatic_interactive_unchanged_equals_automatic(qtbot, monkeypatch):
@@ -320,7 +320,7 @@ def test_mask_automatic_interactive_unchanged_equals_automatic(qtbot, monkeypatc
     t = n / np.linalg.norm(n, axis=0) * rng.uniform(-N / 2, N / 2, 4000) / N  # dK = 1 / N
     t = t.reshape(3, 40, 100)
     N_u, dK_u = np.array([[N, N, N]], float), np.full((1, 3), 1.0 / N)
-    Gn = ml.bmTraj2SparseMat(t, np.ones((1, 4000)), N_u, dK_u, nargout=1)
+    Gn = ml.traj_to_sparse_mat(t, np.ones((1, 4000)), N_u, dK_u, nargout=1)
     x = _phantom(N).astype(np.complex64)
     k = np.reshape(t, (3, -1), order="F") * N
     g = np.arange(N) - N / 2
@@ -331,23 +331,23 @@ def test_mask_automatic_interactive_unchanged_equals_automatic(qtbot, monkeypatc
     y = y.astype(np.complex64)
 
     shown, boxes = [], []
-    monkeypatch.setattr("monalisa.imDisp.bmImage.bmImage", lambda im, **kw: shown.append(kw["name"]))
+    monkeypatch.setattr("monalisa.display._show_image.show_image", lambda im, **kw: shown.append(kw["name"]))
     monkeypatch.setattr(qt, "run_dialog", accept_with())
-    monkeypatch.setattr(selectROI, "run_dialog", accept_with(lambda d: boxes.append(d.edges)))
-    m_int = ml.bmCoilSense_nonCart_mask_automatic(y, Gn, False)
+    monkeypatch.setattr(_select_roi, "run_dialog", accept_with(lambda d: boxes.append(d.edges)))
+    m_int = ml.coil_sense_non_cart_mask_automatic(y, Gn, False)
     assert shown == ["RMS", "MIP", "mask"]
     # the values confirmed in the windows, passed as parameters, give the same mask without windows
-    th = ml.thresholdRMS_MIP(100, *_rms_mip(y, Gn), N_u, True)
-    borders = selectROI.border_extraction(boxes[0], N_u.ravel())
-    m_code = ml.bmCoilSense_nonCart_mask_automatic(y, Gn, True, th[0], th[1], borders)
+    th = ml.threshold_rms_mip(100, *_rms_mip(y, Gn), N_u, True)
+    borders = _select_roi.border_extraction(boxes[0], N_u.ravel())
+    m_code = ml.coil_sense_non_cart_mask_automatic(y, Gn, True, th[0], th[1], borders)
     np.testing.assert_array_equal(m_int, m_code)
     assert 0 < m_code.sum() < m_code.size
 
 
 def _rms_mip(y, Gn):
-    from monalisa.arrayUtility.bmBlockReshape import bmBlockReshape
+    from monalisa.array._block_reshape import block_reshape
 
     N_u = Gn.N_u.ravel()
-    x = bmBlockReshape(ml.bmNasha(y, Gn, N_u), N_u)
-    rms, mip = ml.bmRMS(x, N_u), ml.bmMIP(x, N_u)
+    x = block_reshape(ml.nasha(y, Gn, N_u), N_u)
+    rms, mip = ml.rms(x, N_u), ml.mip(x, N_u)
     return 100 * (rms - rms.min()) / rms.max(), 100 * (mip - mip.min()) / mip.max()

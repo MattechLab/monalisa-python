@@ -14,7 +14,7 @@ import sys
 import ismrmrd
 import numpy as np
 
-from monalisa.rawDataReader.siemens._twix import read_twix
+from monalisa.io._twix import read_twix
 
 
 def convert(src, dst):

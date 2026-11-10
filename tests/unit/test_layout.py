@@ -6,7 +6,7 @@ import scipy.fft
 import scipy.sparse
 
 from monalisa._fft import fftshift, ifftshift
-from monalisa.sparseMat.mex._sparse_vec import csr_matvec, csr_matvec_complex, matvec, zeros
+from monalisa.sparse._sparse_vec import csr_matvec, csr_matvec_complex, matvec, zeros
 
 
 @pytest.mark.parametrize("shape", [(6,), (5, 1), (6, 7), (5, 4, 3), (4, 6, 8, 3), (3, 5, 7, 2, 2)])

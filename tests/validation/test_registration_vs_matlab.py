@@ -1,6 +1,6 @@
 """Validation of the demons registration replacement and of the motion-compensated reconstructions.
 
-MATLAB's ``imregdemons`` is replaced by SimpleITK's demons (monalisa.imReg._demons), so the
+MATLAB's ``imregdemons`` is replaced by SimpleITK's demons (monalisa.registration._demons), so the
 deformation fields are compared on quality, not to rounding. Opt-in (needs the MATLAB references
 of tools/matlab_capture/validation and the upstream demo data):
 
@@ -23,7 +23,7 @@ import scipy.io as sio
 
 pytest.importorskip("SimpleITK")
 
-from monalisa.readWrite._mat73 import loadmat73  # noqa: E402
+from monalisa.io import loadmat73  # noqa: E402
 from monalisa.testing.metrics import rel_l2, summary  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -61,7 +61,7 @@ def _field_stats(v_py, v_ml, weight_mask=None):
 
 @pytest.mark.skipif(not (VAL / "imregdemons_reference.mat").exists(), reason="run imregdemons_reference.m first")
 def test_imregdemons_vs_matlab():
-    from monalisa.imReg._demons import imregdemons
+    from monalisa.registration._demons import imregdemons
 
     cases = sio.loadmat(VAL / "imregdemons_reference.mat", squeeze_me=True, struct_as_record=False)["cases"]
     for c in cases:
@@ -91,34 +91,34 @@ needs_chain = pytest.mark.skipif(
 @pytest.fixture(scope="module")
 def chain():
     import monalisa as ml
-    from monalisa.optim.bmWitnessInfo import bmWitnessInfo
+    from monalisa.optim import WitnessInfo
 
     S = sio.loadmat(Path(UPSTREAM) / "demo" / "data_demo" / "data_5_chain_radial_simulated_from_cartesian" / "data.mat")
     t, y = S["t"], S["y"]
     N_u, dK_u, frSize = S["N_u"], S["dK_u"], S["frSize"]
     nFr = int(S["nFr"].item())
-    ve = ml.bmVolumeElement(t, "voronoi_full_radial2")
+    ve = ml.volume_element(t, "voronoi_full_radial2")
     C_size = np.array(S["C"].shape[: int(S["frDim"].item())], float)[None, :]
-    C = ml.bmImResize(S["C"], C_size, frSize)
+    C = ml.im_resize(S["C"], C_size, frSize)
     x0 = np.empty((nFr, 1), dtype=object)
     for i in range(nFr):
-        x0[i, 0] = ml.bmMathilda(y[i, 0], t[i, 0], ve[i, 0], C, N_u, frSize, dK_u, None, None, None, None)
-    _, Gu, Gut = ml.bmTraj2SparseMat(t, ve, N_u, dK_u, nargout=3)
+        x0[i, 0] = ml.mathilda(y[i, 0], t[i, 0], ve[i, 0], C, N_u, frSize, dK_u, None, None, None, None)
+    _, Gu, Gut = ml.traj_to_sparse_mat(t, ve, N_u, dK_u, nargout=3)
     ve_max = 10 * np.prod(dK_u)
 
     def solve(name, Tu1, Tu1t, Tu2=None, Tu2t=None):
-        w = bmWitnessInfo(name, None, False)
+        w = WitnessInfo(name, None, False)
         if name == "teva":
-            return ml.bmTevaMorphosia_chain(x0, None, None, y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, 0.3, 3, "normal",
-                                            4, ve_max, 30, w)
+            return ml.teva_morphosia_chain(x0, None, None, y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, 0.3, 3, "normal",
+                                           4, ve_max, 30, w)
         if name == "duo":
-            return ml.bmTevaDuoMorphosia_chain(x0, None, None, None, None, y, ve, C, Gu, Gut, frSize,
+            return ml.teva_duo_morphosia_chain(x0, None, None, None, None, y, ve, C, Gu, Gut, frSize,
                                                Tu1, Tu1t, Tu2, Tu2t, 0.3, 3, "normal", 4, ve_max, 30, w)
-        return ml.bmSensitivaMorphosia_chain(x0, y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, 3, "normal",
-                                             4, ve_max, 30, w)
+        return ml.sensitiva_morphosia_chain(x0, y, ve, C, Gu, Gut, frSize, Tu1, Tu1t, 3, "normal",
+                                            4, ve_max, 30, w)
 
-    x1 = ml.bmTevaMorphosia_chain(x0, None, None, y, ve, C, Gu, Gut, frSize, None, None, 0.1, 1, "normal",
-                                  4, ve_max, 30, bmWitnessInfo("teva", None, False))
+    x1 = ml.teva_morphosia_chain(x0, None, None, y, ve, C, Gu, Gut, frSize, None, None, 0.1, 1, "normal",
+                                 4, ve_max, 30, WitnessInfo("teva", None, False))
     return {"S": S, "x0": x0, "x1": x1, "N_u": N_u, "frSize": frSize, "solve": solve,
             "ref": loadmat73(VAL / "chain_data5.mat")}
 
@@ -145,8 +145,8 @@ def chain_fields(chain):
     out = {}
     for name, kind in (("DF_to_prev", "curr_to_prev"), ("DF_to_next", "curr_to_next")):
         # registration of the MATLAB images, to compare the fields on identical inputs
-        out[name] = ml.bmImDeformFieldChain_imRegDemons23(ref["x1"], chain["frSize"], kind, 500, 1, None,
-                                                          reg_mask, 10, nargout=2)
+        out[name] = ml.im_deform_field_chain_im_reg_demons23(ref["x1"], chain["frSize"], kind, 500, 1, None,
+                                                             reg_mask, 10, nargout=2)
     return out
 
 
@@ -176,8 +176,8 @@ def test_motion_compensated_reconstructions(chain, chain_fields, solver, tmp_pat
     N_u = chain["N_u"]
     for src, DF_prev, DF_next in (("matlab_fields", ref["DF_to_prev"], ref["DF_to_next"]),
                                   ("python_fields", chain_fields["DF_to_prev"][0], chain_fields["DF_to_next"][0])):
-        Tu1, Tu1t = ml.bmImDeformField2SparseMat(DF_prev, N_u, None, True)
-        Tu2, Tu2t = ml.bmImDeformField2SparseMat(DF_next, N_u, None, True) if solver == "duo" else (None, None)
+        Tu1, Tu1t = ml.im_deform_field_to_sparse_mat(DF_prev, N_u, None, True)
+        Tu2, Tu2t = ml.im_deform_field_to_sparse_mat(DF_next, N_u, None, True) if solver == "duo" else (None, None)
         x_py = _stack(chain["solve"](solver, Tu1, Tu1t, Tu2, Tu2t))
         REPORT[f"chain/x_{solver}_DF/{src}"] = summary(x_py, x_ml)
     # reference scale: how much the deformation fields change the reconstruction at all
@@ -196,8 +196,8 @@ def test_sheet_fields_vs_matlab():
     ref = loadmat73(VAL / "sheet_data7.mat")
     S = sio.loadmat(Path(UPSTREAM) / "demo" / "data_demo" / "data_7_sheet_radial_simulated_from_XCAT" / "data.mat",
                     variable_names=["frSize", "reg_mask"])
-    DF1, DF2 = ml.bmImDeformFieldSheet_imRegDemons23(ref["xs0"], S["frSize"], "curr_to_prev", [100, 100], 1, None,
-                                                     S["reg_mask"], 10)
+    DF1, DF2 = ml.im_deform_field_sheet_im_reg_demons23(ref["xs0"], S["frSize"], "curr_to_prev", [100, 100], 1, None,
+                                                        S["reg_mask"], 10)
     mask = S["reg_mask"].astype(bool).ravel(order="F")
     for name, py in (("DF_sheet_1", DF1), ("DF_sheet_2", DF2)):
         v_py = np.concatenate([np.asarray(v).T[mask] for v in py.flat])

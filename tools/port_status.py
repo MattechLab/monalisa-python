@@ -109,14 +109,13 @@ def main():
 
     items = scope(args.upstream)
     results = run(args.fixtures)
-    index = monalisa._function_index()
 
     rows = []
     n_ported = n_validated = 0
     lines_ported = 0
     for it in items:
         name = it["name"]
-        ported = name in index
+        ported = name in monalisa.MATLAB_NAMES
         r = results.get(name)
         if ported:
             n_ported += 1
@@ -132,8 +131,8 @@ def main():
             if r["pass"]:
                 n_validated += 1
         rel = f"{r['rel_l2']:.1e}" if (r and ported and r["pass"]) else ""
-        mark = "yes" if ported else ""
-        rows.append(f"| `{name}` | {it['path']} | {it['code_lines']} | {mark} | {parity} | {rel} |")
+        py = f"`{monalisa.MATLAB_NAMES[name]}`" if ported else ""
+        rows.append(f"| `{name}` | {it['path']} | {it['code_lines']} | {py} | {parity} | {rel} |")
 
     total_lines = sum(i["code_lines"] for i in items)
     head = [
@@ -147,10 +146,11 @@ def main():
         f"- Ported: **{n_ported}** ({lines_ported} code lines, {100 * lines_ported / total_lines:.0f} %).",
         f"- Validated against MATLAB recordings: **{n_validated}**.",
         "",
-        "*rel L2* is the worst relative L2 error over all recorded calls and outputs.",
+        "*Python* is the ported function (`monalisa.<subpackage>.<name>`, see docs/renaming.md); *rel L2* is "
+        "the worst relative L2 error over all recorded calls and outputs.",
         "",
-        "| Function | Upstream file | Code lines | Ported | MATLAB parity | worst rel L2 |",
-        "|---|---|---:|:---:|---|---:|",
+        "| MATLAB function | Upstream file | Code lines | Python | MATLAB parity | worst rel L2 |",
+        "|---|---|---:|---|---|---:|",
     ]
     args.out.write_text("\n".join(head + rows) + "\n")
     fails = {k: v["issues"] for k, v in results.items() if v["issues"]}
