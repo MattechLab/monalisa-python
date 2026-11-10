@@ -1,0 +1,16 @@
+# Monalisa in a container: docker compose up, then open the http://127.0.0.1:8888/lab?token=...
+# link printed in the output. See docs/docker.md.
+#
+# The repository is mounted on /work: notebooks, code and results stay in this folder on the host.
+# Raw data from another folder: MONALISA_DATA=/path/to/data_8_tutorial_1 docker compose up
+# napari windows (Linux, X11): docker compose -f compose.yaml -f compose.x11.yaml up
+
+services:
+  monalisa:
+    build: .
+    image: monalisa-python
+    ports:
+      - "127.0.0.1:8888:8888"
+    volumes:
+      - .:/work
+      - ${MONALISA_DATA:-./demo/data_demo/data_8_tutorial_1}:/work/demo/data_demo/data_8_tutorial_1

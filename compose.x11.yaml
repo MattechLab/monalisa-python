@@ -1,0 +1,14 @@
+# Add to compose.yaml to open napari windows and the interactive dialogs on the host's X11 display
+# (Linux with the Docker Engine; WSL2 with WSLg). Allow the container's user (uid 1000) first:
+#
+#   xhost +SI:localuser:$(id -un)
+#   docker compose -f compose.yaml -f compose.x11.yaml up
+#
+# See docs/docker.md for macOS (XQuartz) and Docker Desktop.
+
+services:
+  monalisa:
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix

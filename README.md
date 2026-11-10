@@ -11,7 +11,40 @@ recordings of the MATLAB implementation**; see [docs/porting_method.md](docs/por
 initials of the MATLAB names: `bmMathilda` → `monalisa.recon.mathilda`, `bmSparseMat` →
 `monalisa.sparse.SparseMat`. The table of all names is [docs/renaming.md](docs/renaming.md).
 
-## Install
+## Quick start with Docker
+
+The Docker image has everything installed (Python, NumPy/SciPy/numba, the raw-data readers,
+SimpleITK, napari and JupyterLab): no conda, no pip, nothing else on your computer.
+
+1. Install [Docker](https://docs.docker.com/get-started/get-docker/) (Docker Desktop on macOS and
+   Windows; Docker Engine or Docker Desktop on Linux).
+2. Get the repository and start JupyterLab:
+
+   ```bash
+   git clone https://github.com/MattechLab/monalisa-python.git
+   cd monalisa-python
+   docker compose up          # builds the image the first time (a few minutes)
+   ```
+
+3. Open the `http://127.0.0.1:8888/lab?token=...` link printed in the terminal, then
+   `examples/tutorial_1/tutorial_1.ipynb`. Stop with Ctrl+C (or `docker compose down`).
+
+The repository folder is mounted in the container (as `/work`): notebooks, code and results stay
+on your computer. Other commands run in the same container:
+
+```bash
+docker compose run --rm monalisa python demo/data_demo/data_8_tutorial_1/download_data.py   # tutorial data, 7.9 GB
+docker compose run --rm monalisa python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out examples/tutorial_1/results
+docker compose run --rm monalisa xvfb-run -a pytest tests/unit
+MONALISA_DATA=/path/to/data_8_tutorial_1 docker compose up    # raw data from another folder
+```
+
+Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory of Docker Desktop
+(Settings → Resources). In the notebook, images are shown with sliders; napari windows and the
+interactive dialogs need a display (on Linux: `docker compose -f compose.yaml -f compose.x11.yaml up`).
+Details, other platforms and troubleshooting: [docs/docker.md](docs/docker.md).
+
+## Install without Docker
 
 With pip (any Python environment, 3.10 or newer):
 
@@ -162,7 +195,7 @@ C = ml.im_resize(d["C"], [32, 32], d["frSize"])
 x0 = ml.mathilda(d["y"], d["t"], ve, C, d["N_u"], d["frSize"], d["dK_u"])
 ```
 
-Tutorial 1 (3D radial brain scan, Siemens raw data):
+Tutorial 1 (3D radial brain scan, Siemens raw data), without Docker:
 
 ```bash
 python demo/data_demo/data_8_tutorial_1/download_data.py   # raw data, about 7.9 GB (once)

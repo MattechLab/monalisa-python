@@ -1,0 +1,20 @@
+# Not needed in the image (the repository is mounted on /work at run time, see compose.yaml)
+.git
+.github
+.venv
+.vscode
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/.ipynb_checkpoints
+*.egg-info
+build
+dist
+# MATLAB recordings, raw data and results (large)
+fixtures
+demo/data_demo/**/*.dat
+demo/data_demo/**/*.mrd
+demo/data_demo/**/*.part
+demo/data_demo/**/*.mat
+examples/**/results
+/x_*.mat
