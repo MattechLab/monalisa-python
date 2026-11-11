@@ -1,5 +1,6 @@
 """Viewer and interactive dialogs, driven programmatically (off-screen Qt)."""
 
+import inspect
 import os
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -65,7 +66,10 @@ def test_show_image_napari(qtbot):
         ml.show_image(x + 1, viewer=viewer, name="x2")  # added to the window: side by side, in order
         assert _grid(viewer).enabled
         ml.show_image(x - 1, viewer=viewer, name="x3")
-        assert [_grid(viewer).position(i, viewer.layers) for i in range(3)] == [(0, 0), (0, 1), (0, 2)]
+        grid = _grid(viewer)
+        # napari >= 0.10 takes the layers, earlier versions (the last ones for Python 3.10) their number
+        layers = viewer.layers if "layers" in inspect.signature(grid.position).parameters else len(viewer.layers)
+        assert [grid.position(i, layers) for i in range(3)] == [(0, 0), (0, 1), (0, 2)]
         assert viewer.title == "x  |  x2  |  x3"
     finally:
         viewer.close()
