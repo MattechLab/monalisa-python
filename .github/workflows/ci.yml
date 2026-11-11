@@ -14,7 +14,10 @@ on:
 jobs:
   test:
     name: Lint and unit tests (no MATLAB)
-    runs-on: ubuntu-latest
+    # Not ubuntu-latest: the Ubuntu 26.04 runners (ubuntu-latest since 2026-10-19) cannot resolve
+    # the Ubuntu package servers, so apt-get fails (seen 2026-11-09 to 11-11). Back to
+    # ubuntu-latest once that works again.
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
