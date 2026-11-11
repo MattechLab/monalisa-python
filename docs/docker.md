@@ -55,6 +55,15 @@ docker compose run --rm monalisa python
 docker compose run --rm monalisa bash
 ```
 
+The recordings of the raw data readers (scenarios `ismrmrd`, `tutorial_coilsense`,
+`tutorial_recon`) store the absolute paths of the raw files on the computer where MATLAB ran.
+For them to replay in the container, mount the repository and the raw data at the same paths:
+
+```bash
+docker compose run --rm -v "$PWD:$PWD:ro" -v "/path/to/data_8_tutorial_1:/path/to/data_8_tutorial_1:ro" \
+    monalisa pytest tests/parity -n auto
+```
+
 **Raw data in another folder** (for instance the copy of the MATLAB repository): set
 `MONALISA_DATA`, it is mounted where the tutorial expects the data.
 
@@ -107,19 +116,42 @@ a parameter that skips it (README.md, *Viewing images and interactive steps*).
 
 ## Published image
 
-The workflow [`.github/workflows/docker.yml`](../.github/workflows/docker.yml) builds the image
-and runs the unit tests in it for every change of the `Dockerfile` or of the dependencies, and
-publishes it on the GitHub Container Registry when a version tag (`v*`) is pushed. Once published
-(and the package made public in the GitHub settings), the image can be used without building it:
+Each release is published, for `linux/amd64` and `linux/arm64` (Apple silicon), on
+[Docker Hub](https://hub.docker.com/r/mattechlab/monalisa-python) as `mattechlab/monalisa-python`
+and on the GitHub Container Registry as `ghcr.io/mattechlab/monalisa-python` (same image). Tags:
+`latest`, `0.1.0`, `0.1`; a release tag, or the digest printed by `docker pull`, identifies the
+exact environment of a result.
+
+The image contains the repository (code, notebooks, tutorial), so it runs without a clone. Tutorial
+1 with the data and results in `./monalisa` on the computer:
 
 ```bash
-docker pull ghcr.io/mattechlab/monalisa-python:latest
-docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD":/work ghcr.io/mattechlab/monalisa-python
+mkdir -p monalisa/data monalisa/results   # before docker run, so that they belong to you
+docker run --rm -v "$PWD/monalisa/data:/data" mattechlab/monalisa-python \
+    python demo/data_demo/data_8_tutorial_1/download_data.py --out /data       # 7.9 GB, once
+docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD/monalisa/data:/data" -e MONALISA_TUTORIAL_DATA=/data \
+    -v "$PWD/monalisa/results:/work/examples/tutorial_1/results" mattechlab/monalisa-python
 ```
 
-With `-v "$PWD":/work`, the current folder is the working folder in JupyterLab; it should contain
-the notebooks and data to work on (for instance a clone of this repository). Without it, the
-container works on the copy of the repository in the image, and its changes are lost when it stops.
+Only the mounted folders are kept: other changes in the container (the notebook itself) are lost
+when it stops. With a clone, `-v "$PWD":/work` (what `compose.yaml` does) makes the whole
+repository folder the working folder instead. The page shown on Docker Hub is
+[docs/dockerhub.md](dockerhub.md).
+
+**Publishing** is done by [`.github/workflows/docker.yml`](../.github/workflows/docker.yml). For
+every change of the `Dockerfile` or of the dependencies it builds the image on an amd64 and an
+arm64 runner and runs the unit tests in each. When a version tag is pushed, it then pushes the
+two-platform image to both registries and updates the Docker Hub description. A release:
+
+1. set `version` in `pyproject.toml` and `__version__` in `src/monalisa/__init__.py` (`0.1.0`), commit;
+2. `git tag v0.1.0 && git push origin main v0.1.0`;
+3. the first time only: in GitHub, *Packages → monalisa-python → Package settings*, make the
+   ghcr.io package public (a Docker Hub repository created by a push is public by default).
+
+It needs two secrets in the GitHub repository (*Settings → Secrets and variables → Actions*):
+`DOCKERHUB_USERNAME` (`mattechlab`) and `DOCKERHUB_TOKEN`, a personal access token of that Docker
+Hub account with *Read, Write, Delete* access (*Delete* is needed to update the description). A
+manual run (*Actions → Docker image → Run workflow*, "publish") pushes `latest` without a release.
 
 ## Troubleshooting
 

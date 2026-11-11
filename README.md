@@ -44,6 +44,18 @@ Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory o
 interactive dialogs need a display (on Linux: `docker compose -f compose.yaml -f compose.x11.yaml up`).
 Details, other platforms and troubleshooting: [docs/docker.md](docs/docker.md).
 
+**Without cloning the repository**, the released image is on Docker Hub
+([mattechlab/monalisa-python](https://hub.docker.com/r/mattechlab/monalisa-python), Intel/AMD and
+Apple silicon); this runs tutorial 1 in JupyterLab with the data and results in `./monalisa`:
+
+```bash
+mkdir -p monalisa/data monalisa/results
+docker run --rm -v "$PWD/monalisa/data:/data" mattechlab/monalisa-python \
+    python demo/data_demo/data_8_tutorial_1/download_data.py --out /data       # 7.9 GB, once
+docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD/monalisa/data:/data" -e MONALISA_TUTORIAL_DATA=/data \
+    -v "$PWD/monalisa/results:/work/examples/tutorial_1/results" mattechlab/monalisa-python
+```
+
 ## Install without Docker
 
 With pip (any Python environment, 3.10 or newer):
