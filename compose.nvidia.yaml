@@ -1,0 +1,11 @@
+# Add to compose.yaml and compose.x11.yaml on a Linux computer with an NVIDIA card: the napari
+# windows then use the card's OpenGL (Mesa's software renderer cannot draw into windows of the
+# NVIDIA X server). Needs the NVIDIA Container Toolkit. See docs/docker.md.
+#
+#   docker compose -f compose.yaml -f compose.x11.yaml -f compose.nvidia.yaml up
+
+services:
+  monalisa:
+    gpus: all
+    environment:
+      NVIDIA_DRIVER_CAPABILITIES: graphics,utility

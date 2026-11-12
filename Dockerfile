@@ -23,9 +23,13 @@ RUN apt-get update \
         libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Mesa's software OpenGL renderer: the container has no GPU driver, and on a host with an NVIDIA
-# card Mesa otherwise tries the absent nouveau driver and hangs while napari creates its canvas.
+# OpenGL of the napari windows. Without a GPU, Mesa's software renderer: on a host with an NVIDIA
+# card Mesa would otherwise try the absent nouveau driver and hang while napari creates its canvas.
+# On such a host, Mesa cannot draw into windows of the NVIDIA X server: `docker run --gpus all`
+# (NVIDIA Container Toolkit) brings the host's NVIDIA OpenGL instead, which the capabilities below
+# enable (the software setting does not apply to it).
 ENV LIBGL_ALWAYS_SOFTWARE=1 \
+    NVIDIA_DRIVER_CAPABILITIES=graphics,utility \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
