@@ -62,6 +62,34 @@ docker compose run --rm monalisa xvfb-run -a pytest tests/unit
 MONALISA_DATA=/path/to/data_8_tutorial_1 docker compose up    # raw data from another folder
 ```
 
+Monalisa is installed in editable mode from this folder: changes to `src/` apply to the next
+`import monalisa` (restart the notebook kernel), without rebuilding the image.
+
+### Your own scripts and notebooks
+
+`import monalisa` works in any folder of the container, so your own code only needs to be mounted.
+Mount your project folder (here the current one) on `/work/mine`; it then appears in JupyterLab's
+file browser and its files stay on your computer:
+
+```bash
+# JupyterLab: notebooks in mine/, and a terminal (File → New → Terminal) to run scripts
+docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD:/work/mine" mattechlab/monalisa-python
+
+# a script, without JupyterLab (files it writes with relative paths go to your folder)
+docker run --rm -v "$PWD:/work/mine" -w /work/mine mattechlab/monalisa-python python my_script.py
+```
+
+```python
+import monalisa as ml                  # all public functions: ml.mathilda, ml.create_raw_data_reader, ...
+reader = ml.create_raw_data_reader("/work/mine/data/scan.dat", True)
+```
+
+Paths in your code are the ones in the container: mount the raw data too if it lives elsewhere
+(`-v /path/to/data:/data:ro`, then read `/data/scan.dat`). From the repository, the same works with
+`docker compose run --rm -v "$PWD/../my_project:/work/mine" -w /work/mine monalisa python my_script.py`,
+or by putting your scripts in the repository folder. On Linux the container runs as uid 1000: the
+mounted folders must be writable by that user ([docs/docker.md](docs/docker.md)).
+
 ## Install without Docker
 
 With pip (any Python environment, 3.10 or newer):

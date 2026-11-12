@@ -37,6 +37,22 @@ docker run --rm -v "$PWD/monalisa/data:/data" -v "$PWD/monalisa/results:/results
     mattechlab/monalisa-python python examples/tutorial_1/tutorial_1.py --data /data --out /results
 ```
 
+## Your own scripts and notebooks
+
+`import monalisa` works in any folder of the container: mount your project folder on
+`/work/mine` (it appears in JupyterLab's file browser, and its files stay on your computer).
+
+```bash
+# JupyterLab with your notebooks in mine/ (File → New → Terminal runs scripts there)
+docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD:/work/mine" mattechlab/monalisa-python
+
+# a script, without JupyterLab
+docker run --rm -v "$PWD:/work/mine" -w /work/mine mattechlab/monalisa-python python my_script.py
+```
+
+Paths in your code are the container's: mount raw data from elsewhere as well
+(`-v /path/to/data:/data:ro`, then read `/data/scan.dat`).
+
 ## With a clone of the repository
 
 `docker compose up` in the repository uses the repository folder as the working folder (your
