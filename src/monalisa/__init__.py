@@ -211,7 +211,7 @@ from monalisa.trajectory import (
 )
 from monalisa.util import default_grid, default_kernel, default_sparse_type, time_in_second, varargin
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def find_function(matlab_name: str):
