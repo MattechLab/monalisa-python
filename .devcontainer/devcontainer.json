@@ -9,6 +9,9 @@
   "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
   "workspaceFolder": "/work",
   "remoteUser": "monalisa",
+  // A .venv of the repository (made outside the container, e.g. on macOS or Windows) would be
+  // picked by VS Code instead of the image's Python, and cannot run in the container: hide it.
+  "mounts": ["source=monalisa-venv-${devcontainerId},target=/work/.venv,type=volume"],
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python", "ms-toolsai.jupyter", "charliermarsh.ruff"],

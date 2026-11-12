@@ -8,7 +8,10 @@
   "workspaceFolder": "/work",
   "remoteUser": "monalisa",
   "containerEnv": { "DISPLAY": "${localEnv:DISPLAY}" },
-  "mounts": ["source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"],
+  "mounts": [
+    "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind",
+    "source=monalisa-venv-${devcontainerId},target=/work/.venv,type=volume"  // hide a .venv made outside
+  ],
   "hostRequirements": { "gpu": "optional" },
   "customizations": {
     "vscode": {
