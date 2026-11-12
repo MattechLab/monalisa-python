@@ -14,46 +14,52 @@ initials of the MATLAB names: `bmMathilda` → `monalisa.recon.mathilda`, `bmSpa
 ## Quick start with Docker
 
 The Docker image has everything installed (Python, NumPy/SciPy/numba, the raw-data readers,
-SimpleITK, napari and JupyterLab): no conda, no pip, nothing else on your computer.
+SimpleITK, napari and JupyterLab): no conda, no pip, nothing else on your computer. It is on
+Docker Hub, [mattechlab/monalisa-python](https://hub.docker.com/r/mattechlab/monalisa-python)
+(Intel/AMD and Apple silicon), so tutorial 1 runs without cloning the repository:
 
 1. Install [Docker](https://docs.docker.com/get-started/get-docker/) (Docker Desktop on macOS and
    Windows; Docker Engine or Docker Desktop on Linux).
-2. Get the repository and start JupyterLab:
+2. Download the tutorial data and start JupyterLab, with the data and results in `./monalisa`:
 
    ```bash
-   git clone https://github.com/MattechLab/monalisa-python.git
-   cd monalisa-python
-   docker compose up          # builds the image the first time (a few minutes)
+   mkdir -p monalisa/data monalisa/results
+   docker run --rm -v "$PWD/monalisa/data:/data" mattechlab/monalisa-python \
+       python demo/data_demo/data_8_tutorial_1/download_data.py --out /data       # 7.9 GB, once
+   docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD/monalisa/data:/data" -e MONALISA_TUTORIAL_DATA=/data \
+       -v "$PWD/monalisa/results:/work/examples/tutorial_1/results" mattechlab/monalisa-python
    ```
 
 3. Open the `http://127.0.0.1:8888/lab?token=...` link printed in the terminal, then
-   `examples/tutorial_1/tutorial_1.ipynb`. Stop with Ctrl+C (or `docker compose down`).
+   `examples/tutorial_1/tutorial_1.ipynb`. Stop with Ctrl+C.
+
+The results stay in `monalisa/results`; changes to the notebook stay in the container and are
+lost when it stops (download it from JupyterLab to keep it, or work from the repository below).
+
+Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory of Docker Desktop
+(Settings → Resources). In the notebook, images are shown with sliders; napari windows and the
+interactive dialogs need a display (on Linux, from the repository: `docker compose -f compose.yaml -f compose.x11.yaml up`).
+Details, other platforms and troubleshooting: [docs/docker.md](docs/docker.md).
+
+### From the repository
+
+To edit the code and keep the notebooks, clone the repository and build the image locally:
+
+```bash
+git clone https://github.com/MattechLab/monalisa-python.git
+cd monalisa-python
+docker compose up          # builds the image the first time (a few minutes)
+```
 
 The repository folder is mounted in the container (as `/work`): notebooks, code and results stay
-on your computer. Other commands run in the same container:
+on your computer. Open the link as above; stop with Ctrl+C (or `docker compose down`). Other
+commands run in the same container:
 
 ```bash
 docker compose run --rm monalisa python demo/data_demo/data_8_tutorial_1/download_data.py   # tutorial data, 7.9 GB
 docker compose run --rm monalisa python examples/tutorial_1/tutorial_1.py --data demo/data_demo/data_8_tutorial_1 --out examples/tutorial_1/results
 docker compose run --rm monalisa xvfb-run -a pytest tests/unit
 MONALISA_DATA=/path/to/data_8_tutorial_1 docker compose up    # raw data from another folder
-```
-
-Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory of Docker Desktop
-(Settings → Resources). In the notebook, images are shown with sliders; napari windows and the
-interactive dialogs need a display (on Linux: `docker compose -f compose.yaml -f compose.x11.yaml up`).
-Details, other platforms and troubleshooting: [docs/docker.md](docs/docker.md).
-
-**Without cloning the repository**, the released image is on Docker Hub
-([mattechlab/monalisa-python](https://hub.docker.com/r/mattechlab/monalisa-python), Intel/AMD and
-Apple silicon); this runs tutorial 1 in JupyterLab with the data and results in `./monalisa`:
-
-```bash
-mkdir -p monalisa/data monalisa/results
-docker run --rm -v "$PWD/monalisa/data:/data" mattechlab/monalisa-python \
-    python demo/data_demo/data_8_tutorial_1/download_data.py --out /data       # 7.9 GB, once
-docker run --rm -it -p 127.0.0.1:8888:8888 -v "$PWD/monalisa/data:/data" -e MONALISA_TUTORIAL_DATA=/data \
-    -v "$PWD/monalisa/results:/work/examples/tutorial_1/results" mattechlab/monalisa-python
 ```
 
 ## Install without Docker
