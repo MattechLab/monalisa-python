@@ -103,7 +103,10 @@ default there): this works everywhere, with no display. The napari windows (`"wi
 
   On many desktops `xhost` already lists `SI:localuser:<you>`; then the first line is not needed.
   If your user id is not 1000 (`id -u`), use `xhost +local:` instead. OpenGL is Mesa's software
-  renderer: the 3D view of an 80³ volume is fluid, larger volumes are slower.
+  renderer: the 3D view of an 80³ volume is fluid, larger volumes are slower. With the image 0.1.0
+  on a computer with an NVIDIA card, add `-e LIBGL_ALWAYS_SOFTWARE=1` to `docker run` (later images
+  set it): otherwise the window never opens and the notebook cell keeps running. Mesa prints
+  `failed to create drawable` when the window opens: harmless, the views render.
 - **Linux with Docker Desktop**: the virtual machine cannot use the X11 socket of the computer.
   Use the Docker Engine for windows (`docker context use default`, if it is installed), or the
   notebook viewer.

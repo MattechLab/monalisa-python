@@ -10,10 +10,11 @@ FROM python:3.12-slim-trixie
 
 # System libraries of Qt (napari windows, interactive dialogs) for X11, Mesa's software OpenGL
 # so that the 2D and 3D views render without a GPU driver in the container, and a virtual
-# display (xvfb-run) for the tests of the viewers.
+# display (xvfb-run) for the tests of the viewers. xdpyinfo (x11-utils) gives vispy the screen's
+# DPI (otherwise it warns "could not determine DPI").
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        tini xvfb xauth \
+        tini xvfb xauth x11-utils \
         libgl1 libegl1 libegl-mesa0 libopengl0 libglx-mesa0 libgl1-mesa-dri \
         libglib2.0-0t64 libfontconfig1 libfreetype6 libdbus-1-3 \
         libx11-6 libx11-xcb1 libxext6 libxrender1 libxi6 libxkbcommon0 libxkbcommon-x11-0 \
@@ -22,7 +23,10 @@ RUN apt-get update \
         libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 \
     && rm -rf /var/lib/apt/lists/*
 
-ENV PYTHONUNBUFFERED=1 \
+# Mesa's software OpenGL renderer: the container has no GPU driver, and on a host with an NVIDIA
+# card Mesa otherwise tries the absent nouveau driver and hangs while napari creates its canvas.
+ENV LIBGL_ALWAYS_SOFTWARE=1 \
+    PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
