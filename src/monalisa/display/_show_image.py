@@ -8,11 +8,13 @@ sliders is used instead (no window needed).
 
 from __future__ import annotations
 
+import warnings
+
 import numpy as np
 
 from monalisa._mat import iscell, squeeze
 from monalisa.array._cell_to_array import cell_to_array
-from monalisa.display._qt import check_display, in_jupyter
+from monalisa.display._qt import NoDisplayError, check_display, in_jupyter
 
 AXIS_LABELS = ("x", "y", "z", "t", "u")
 
@@ -67,7 +69,8 @@ def show_image(argImage, view: str | None = None, *, name: str | None = None, co
           view, linked by a cursor (click in a slice view to move it).
 
         Default: ``"inline"`` in Jupyter, ``"window"`` otherwise. Windows also open from Jupyter,
-        next to the notebook (they need a display).
+        next to the notebook (they need a display). In Jupyter without a display (Docker on macOS
+        or Windows, a remote server), the window views fall back to ``"inline"``, with a warning.
     name : title of the window and name of the image.
     contrast : ``(low, high)`` display range; default: the data range.
     block : in a script, wait until the window is closed. Windows opened from a script close when
@@ -97,13 +100,19 @@ def show_image(argImage, view: str | None = None, *, name: str | None = None, co
     if view in ("3d", "ortho") and x.ndim < 3:
         raise ValueError(f"show_image: view {view!r} needs a 3D (or 4D, 5D) image, got {x.ndim}D")
     if view == "inline":
-        from monalisa.display._notebook import NotebookViewer
+        return _inline(x, name, contrast)
 
-        w = NotebookViewer(x, name=name, contrast_limits=contrast)
-        w.show()
-        return w
-
-    check_display("In Jupyter, use view='inline', or save the image and view it elsewhere.")
+    try:
+        check_display("In Jupyter, use view='inline', or save the image and view it elsewhere.")
+    except NoDisplayError as e:
+        # In a notebook without a display (Docker on macOS or Windows, a remote server), show the
+        # image in the notebook instead of failing: the cell still shows something.
+        if not in_jupyter() or viewer is not None:
+            raise
+        reason = str(e).split(". ")[0]
+        warnings.warn(f"show_image: view={view!r} needs a window, which cannot open here ({reason}); "
+                      "the image is shown in the notebook instead (view='inline').", stacklevel=2)
+        return _inline(x, name, contrast)
     if view == "ortho":
         from monalisa.display._ortho import OrthoViewer
 
@@ -128,6 +137,14 @@ def show_image(argImage, view: str | None = None, *, name: str | None = None, co
     if block:
         napari.run()
     return viewer
+
+
+def _inline(x, name, contrast):
+    from monalisa.display._notebook import NotebookViewer
+
+    w = NotebookViewer(x, name=name, contrast_limits=contrast)
+    w.show()
+    return w
 
 
 def _grid(viewer):

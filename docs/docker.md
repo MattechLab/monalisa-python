@@ -122,8 +122,9 @@ default there): this works everywhere, with no display. The napari windows (`"wi
   same approach can work, but it is not tested; OpenGL through XQuartz is limited, so the 3D view
   may not open. The notebook viewer works.
 
-Without a display, opening a window raises an error that says so; every interactive step also has
-a parameter that skips it (README.md, *Viewing images and interactive steps*).
+Without a display (Docker on macOS or Windows), `show_image` with a window view shows the image
+in the notebook instead, with a warning; in a script, opening a window raises an error that says
+so. Every interactive step also has a parameter that skips it (README.md, *Viewing images and interactive steps*).
 
 ## VS Code dev container
 

@@ -142,6 +142,23 @@ def test_missing_xcb_cursor_is_a_python_error(monkeypatch):
         ml.show_image(np.zeros((4, 4, 4)), view="window")
 
 
+def test_window_without_display_falls_back_to_notebook_in_jupyter(monkeypatch):
+    # Docker on macOS: no display, but in a notebook the image is shown inline instead of failing
+    from monalisa.display import _qt, _show_image
+    from monalisa.display._notebook import NotebookViewer
+
+    monkeypatch.setattr(_qt, "has_display", lambda: False)
+    monkeypatch.setattr(NotebookViewer, "show", lambda self: None)
+    x = np.random.default_rng(0).random((6, 7, 8))
+    with pytest.raises(_qt.NoDisplayError):  # outside Jupyter: still an error
+        ml.show_image(x, view="ortho")
+    monkeypatch.setattr(_show_image, "in_jupyter", lambda: True)
+    for view in ("ortho", "window", "3d"):
+        with pytest.warns(UserWarning, match="shown in the notebook instead"):
+            w = ml.show_image(x, view=view)
+        assert isinstance(w, NotebookViewer)
+
+
 def test_gtk_theme_avoided_with_conda_glib(monkeypatch, tmp_path):
     # Qt's GTK3 theme loads the system GLib / HarfBuzz; with conda's already loaded (matplotlib),
     # Qt segfaults on start (kernel dies), so a conda environment gets Qt's built-in theme
