@@ -1,0 +1,18 @@
+// VS Code: "Reopen in Container" (Dev Containers extension). Python, the libraries and JupyterLab
+// come from the Docker image of this repository; nothing to install on the computer but Docker.
+// The repository is mounted on /work, where monalisa is installed in editable mode: changes to
+// src/ apply at the next import. Images show in notebooks with sliders (view="inline"); for napari
+// windows on Linux, choose the "Linux display" configuration instead. See docs/docker.md.
+{
+  "name": "monalisa-python",
+  "build": { "dockerfile": "../Dockerfile", "context": ".." },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
+  "workspaceFolder": "/work",
+  "remoteUser": "monalisa",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter", "charliermarsh.ruff"],
+      "settings": { "python.defaultInterpreterPath": "/usr/local/bin/python" }
+    }
+  }
+}

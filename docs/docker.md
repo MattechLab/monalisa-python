@@ -125,6 +125,24 @@ default there): this works everywhere, with no display. The napari windows (`"wi
 Without a display, opening a window raises an error that says so; every interactive step also has
 a parameter that skips it (README.md, *Viewing images and interactive steps*).
 
+## VS Code dev container
+
+With the [Dev Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+extension, VS Code itself runs in the image: open the repository folder, then *Reopen in Container*
+(or *Dev Containers: Reopen in Container* from the command palette). The image is built from the
+`Dockerfile` the first time (a few minutes), the repository is mounted on `/work` (monalisa in
+editable mode, as with compose), and the terminal, the Python interpreter, notebooks and the
+debugger use the image's Python 3.12 with every library installed. Two configurations, in
+`.devcontainer/`:
+
+- **monalisa-python**: everywhere (Linux, macOS, Windows); images in notebooks with sliders.
+- **monalisa-python (Linux display)**: also the napari windows and interactive dialogs, on the
+  X11 display (`xhost` as above). With an NVIDIA card and the NVIDIA Container Toolkit, the
+  container gets the card (`hostRequirements.gpu: optional`), which the windows need there.
+
+The tutorial data in `demo/data_demo/data_8_tutorial_1` is part of the mounted folder. Results and
+edits stay in the repository folder on the computer.
+
 ## Published image
 
 Each release is published, for `linux/amd64` and `linux/arm64` (Apple silicon), on

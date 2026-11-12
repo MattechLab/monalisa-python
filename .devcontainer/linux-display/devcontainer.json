@@ -1,0 +1,19 @@
+// As ../devcontainer.json, with the napari windows and interactive dialogs on the computer's X11
+// display (Linux). With an NVIDIA card and the NVIDIA Container Toolkit, the container also gets
+// the card (needed for the windows there); without, Mesa's software OpenGL draws them.
+{
+  "name": "monalisa-python (Linux display)",
+  "build": { "dockerfile": "../../Dockerfile", "context": "../.." },
+  "workspaceMount": "source=${localWorkspaceFolder},target=/work,type=bind",
+  "workspaceFolder": "/work",
+  "remoteUser": "monalisa",
+  "containerEnv": { "DISPLAY": "${localEnv:DISPLAY}" },
+  "mounts": ["source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"],
+  "hostRequirements": { "gpu": "optional" },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "ms-toolsai.jupyter", "charliermarsh.ruff"],
+      "settings": { "python.defaultInterpreterPath": "/usr/local/bin/python" }
+    }
+  }
+}

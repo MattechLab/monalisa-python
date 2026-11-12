@@ -66,6 +66,11 @@ MONALISA_DATA=/path/to/data_8_tutorial_1 docker compose up    # raw data from an
 Monalisa is installed in editable mode from this folder: changes to `src/` apply to the next
 `import monalisa` (restart the notebook kernel), without rebuilding the image.
 
+**In VS Code**, with the Dev Containers extension: open the repository folder and choose *Reopen in
+Container*. VS Code then runs in the same image (terminal, Python, notebooks, debugger), with the
+repository on `/work`: no virtual environment to create. The configuration *monalisa-python (Linux
+display)* also opens the napari windows (`.devcontainer/`, [docs/docker.md](docs/docker.md#vs-code-dev-container)).
+
 ### Your own scripts and notebooks
 
 `import monalisa` works in any folder of the container, so your own code only needs to be mounted.
