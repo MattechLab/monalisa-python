@@ -89,38 +89,34 @@ container.
 ## Windows: napari viewer and interactive dialogs
 
 In JupyterLab, `show_image` shows images with sliders in the notebook (`view="inline"`, the
-default there): this works everywhere, with no display. The napari windows (`"window"`, `"3d"`,
-`"ortho"`) and the dialogs of `autoFlag=False` need an X11 display, shared with the container by
-[`compose.x11.yaml`](../compose.x11.yaml):
+default there): this works everywhere, with no display and no extra option. The napari windows
+(`"window"`, `"3d"`, `"ortho"`) and the dialogs of `autoFlag=False` open from the container only
+on **Linux with the Docker Engine**; elsewhere, use the notebook viewer, or install monalisa
+directly on the computer (README, *Install without Docker*), where the windows open normally.
 
-- **Linux with the Docker Engine** (tested on Ubuntu with X11): allow the container's user, then
-  start with both compose files:
+| Computer | Napari windows from the container |
+|---|---|
+| Linux, Intel or AMD graphics | `docker compose -f compose.yaml -f compose.x11.yaml up` |
+| Linux, NVIDIA card | `docker compose -f compose.yaml -f compose.x11.yaml -f compose.nvidia.yaml up` (needs the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) |
+| macOS, Windows, Linux with Docker Desktop | not available: notebook viewer, or install without Docker |
 
-  ```bash
-  xhost +SI:localuser:$(id -un)        # once per session; uid 1000 in the container
-  docker compose -f compose.yaml -f compose.x11.yaml up
-  ```
+With `docker run` instead of compose, the display is `-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix`,
+and on an NVIDIA computer also `--gpus all`. **Do not add `--gpus all` on a computer without an
+NVIDIA card** (or without the toolkit): Docker then refuses to start the container.
 
-  On many desktops `xhost` already lists `SI:localuser:<you>`; then the first line is not needed.
-  If your user id is not 1000 (`id -u`), use `xhost +local:` instead. OpenGL is Mesa's software
-  renderer: the 3D view of an 80³ volume is fluid, larger volumes are slower.
-- **Linux with an NVIDIA card** (X server on NVIDIA's driver): Mesa's software renderer cannot draw
-  into its windows (they open empty, and Mesa prints `failed to create drawable`). Use the card,
-  through the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html):
+Details for Linux:
 
-  ```bash
-  docker compose -f compose.yaml -f compose.x11.yaml -f compose.nvidia.yaml up
-  # or, with docker run: --gpus all -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix
-  ```
-
-  With the image 0.1.0 or 0.1.1, also add `-e NVIDIA_DRIVER_CAPABILITIES=graphics,utility`
-  (later images set it). Without the toolkit, use the notebook viewer.
-- **Linux with Docker Desktop**: the virtual machine cannot use the X11 socket of the computer.
-  Use the Docker Engine for windows (`docker context use default`, if it is installed), or the
-  notebook viewer.
-- **Windows 11 (WSL2, WSLg)** and **macOS (XQuartz, `DISPLAY=host.docker.internal:0`)**: the
-  same approach can work, but it is not tested; OpenGL through XQuartz is limited, so the 3D view
-  may not open. The notebook viewer works.
+- The container's user must be allowed on the display: `xhost +SI:localuser:$(id -un)` once per
+  session (many desktops allow it already: see `xhost`). If your user id is not 1000 (`id -u`),
+  use `xhost +local:` instead.
+- Without an NVIDIA card, OpenGL is Mesa's software renderer: the 3D view of an 80³ volume is
+  fluid, larger volumes are slower.
+- With an NVIDIA card, Mesa's software renderer cannot draw into the windows of NVIDIA's X server
+  (they open empty, and Mesa prints `failed to create drawable`): hence the card, through the
+  NVIDIA Container Toolkit. With the image 0.1.0 or 0.1.1, also add
+  `-e NVIDIA_DRIVER_CAPABILITIES=graphics,utility` (later images set it).
+- Docker Desktop on Linux runs containers in a virtual machine, which cannot use the computer's
+  display: use the Docker Engine (`docker context use default`, if it is installed).
 
 Without a display (Docker on macOS or Windows), `show_image` with a window view shows the image
 in the notebook instead, with a warning; in a script, opening a window raises an error that says

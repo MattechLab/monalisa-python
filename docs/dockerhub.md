@@ -66,9 +66,11 @@ notebooks, code changes and results stay there); see
 - **Linux**: the container runs as uid 1000; the mounted folders must be writable by that user
   (the first user of the computer usually is). Create them before `docker run`, otherwise Docker
   creates them as root.
-- **Images**: in the notebook, `show_image` shows images with sliders. napari windows and
-  interactive dialogs need an X11 display (Linux: `-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix`;
-  with an NVIDIA card, also `--gpus all`, which needs the NVIDIA Container Toolkit); see
+- **Images**: in the notebook, `show_image` shows images with sliders, on every computer. napari
+  windows and interactive dialogs open from the container only on Linux:
+  `-e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix`, plus `--gpus all` only with an NVIDIA
+  card and the NVIDIA Container Toolkit (without them, Docker refuses `--gpus all`). On macOS and
+  Windows, use the notebook viewer, or install monalisa without Docker for windows; see
   [docs/docker.md](https://github.com/MattechLab/monalisa-python/blob/main/docs/docker.md#windows-napari-viewer-and-interactive-dialogs).
 - **Tags**: `latest`, and one tag per release (`0.1.0`, `0.1`). Cite a release tag, or its digest,
   to reproduce a result exactly.

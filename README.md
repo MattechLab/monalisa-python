@@ -43,10 +43,11 @@ The results stay in `monalisa/results`; changes to the notebook stay in the cont
 lost when it stops (download it from JupyterLab to keep it, or work from the repository below).
 
 Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory of Docker Desktop
-(Settings → Resources). In the notebook, images are shown with sliders; napari windows and the
-interactive dialogs need a display (on Linux, from the repository: `docker compose -f compose.yaml -f compose.x11.yaml up`;
-with an NVIDIA card, also `-f compose.nvidia.yaml`).
-Details, other platforms and troubleshooting: [docs/docker.md](docs/docker.md).
+(Settings → Resources). In the notebook, images are shown with sliders, on every computer. napari
+windows open from the container only on Linux (from the repository:
+`docker compose -f compose.yaml -f compose.x11.yaml up`; with an NVIDIA card, also
+`-f compose.nvidia.yaml`); on macOS and Windows, use the notebook, or install without Docker.
+Details and troubleshooting: [docs/docker.md](docs/docker.md).
 
 ### From the repository
 
