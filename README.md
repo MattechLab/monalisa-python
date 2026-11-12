@@ -11,6 +11,12 @@ recordings of the MATLAB implementation**; see [docs/porting_method.md](docs/por
 initials of the MATLAB names: `bmMathilda` → `monalisa.recon.mathilda`, `bmSparseMat` →
 `monalisa.sparse.SparseMat`. The table of all names is [docs/renaming.md](docs/renaming.md).
 
+**Documentation: <https://mattechlab.github.io/monalisa-python/>**: the documentation of the
+MATLAB toolbox (reconstruction calls, mitosius, binning, coil sensitivity, volume elements,
+trajectories, tutorial) with the code in Python, and the API of every function. It is built from
+`docs/rst` (`pip install -e . -r docs/requirements.txt`, then `make -C docs html`, output in
+`docs/_build/html`) and published by `.github/workflows/docs.yml`.
+
 ## Quick start with Docker
 
 The Docker image has everything installed (Python, NumPy/SciPy/numba, the raw-data readers,

@@ -1,0 +1,4 @@
+# Documentation build (docs/Makefile, .github/workflows/docs.yml); the package itself is installed too,
+# for the API pages: pip install -e . -r docs/requirements.txt
+sphinx>=7.2
+myst-parser>=3
