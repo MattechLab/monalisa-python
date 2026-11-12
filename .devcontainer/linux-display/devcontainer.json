@@ -13,6 +13,8 @@
     "source=monalisa-venv-${devcontainerId},target=/work/.venv,type=volume"  // hide a .venv made outside
   ],
   "hostRequirements": { "gpu": "optional" },
+  // git for VS Code's source control (not in the image, which is for running monalisa)
+  "features": { "ghcr.io/devcontainers/features/git:1": { "version": "os-provided", "ppa": false } },
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python", "ms-toolsai.jupyter", "charliermarsh.ruff"],

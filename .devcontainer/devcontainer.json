@@ -12,6 +12,8 @@
   // A .venv of the repository (made outside the container, e.g. on macOS or Windows) would be
   // picked by VS Code instead of the image's Python, and cannot run in the container: hide it.
   "mounts": ["source=monalisa-venv-${devcontainerId},target=/work/.venv,type=volume"],
+  // git for VS Code's source control (not in the image, which is for running monalisa)
+  "features": { "ghcr.io/devcontainers/features/git:1": { "version": "os-provided", "ppa": false } },
   "customizations": {
     "vscode": {
       "extensions": ["ms-python.python", "ms-toolsai.jupyter", "charliermarsh.ruff"],
