@@ -56,8 +56,10 @@ jobs:
       # OpenGL for the napari viewer tests: Mesa on Windows (the runners have no OpenGL 2), nothing
       # to do on macOS.
       - uses: pyvista/setup-headless-display-action@v3
-      - run: pip install -e ".[dev,io]" scikit-image
-      - run: pytest tests/unit -q
+      # pytest-github-actions-annotate-failures: each failing test becomes an annotation of the run
+      # (its message is readable on the run page and through the API, unlike the log)
+      - run: pip install -e ".[dev,io]" scikit-image pytest-github-actions-annotate-failures
+      - run: pytest tests/unit -q -rfE --tb=short
 
   parity:
     name: MATLAB parity (static2d)
