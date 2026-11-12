@@ -58,5 +58,5 @@ def test_naming_rule():
 
 def test_renaming_table_is_up_to_date():
     # rows() raises if a name departs from the rule without a reason
-    current = (TOOLS.parent / "docs" / "renaming.md").read_text()
+    current = (TOOLS.parent / "docs" / "renaming.md").read_text(encoding="utf-8")
     assert current == renaming_table.render(), "run python tools/renaming_table.py"

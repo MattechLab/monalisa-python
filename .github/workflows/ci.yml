@@ -53,13 +53,15 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      # OpenGL for the napari viewer tests: Mesa on Windows (the runners have no OpenGL 2), nothing
-      # to do on macOS.
-      - uses: pyvista/setup-headless-display-action@v3
       # pytest-github-actions-annotate-failures: each failing test becomes an annotation of the run
       # (its message is readable on the run page and through the API, unlike the log)
       - run: pip install -e ".[dev,io]" scikit-image pytest-github-actions-annotate-failures
-      - run: pytest tests/unit -q -rfE --tb=short
+      # The napari viewer tests need OpenGL, which these runners do not offer to napari (Windows:
+      # GLError on the canvas; macOS: crash): skipped here, run by the Linux job. Two worker
+      # processes (-n 2): a test that crashes Python is reported as that test's failure.
+      - run: pytest tests/unit -q -rfE --tb=short -n 2
+        env:
+          MONALISA_TESTS_NO_OPENGL: "1"
 
   parity:
     name: MATLAB parity (static2d)

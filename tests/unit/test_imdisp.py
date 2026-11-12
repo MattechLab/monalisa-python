@@ -18,6 +18,11 @@ from monalisa.display._show_image import image_data, view_order  # noqa: E402
 from monalisa.io import _metadata_dialog  # noqa: E402
 from monalisa.io._mri_acquisition_param import MriAcquisitionParam  # noqa: E402
 
+# napari draws with OpenGL: the GitHub macOS and Windows runners have none that napari can use
+# (CI sets MONALISA_TESTS_NO_OPENGL there; the Linux job runs these tests on a virtual display).
+needs_opengl = pytest.mark.skipif(os.environ.get("MONALISA_TESTS_NO_OPENGL") == "1",
+                                  reason="no usable OpenGL on this machine (MONALISA_TESTS_NO_OPENGL=1)")
+
 
 def accept_with(action=None):
     """A replacement for run_dialog that applies ``action(dlg)`` and confirms."""
@@ -48,6 +53,7 @@ def test_view_order_shows_matlab_slices():
     assert view_order(5) == (4, 3, 2, 0, 1)
 
 
+@needs_opengl
 def test_show_image_napari(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
@@ -91,6 +97,7 @@ def _click(ov, view, position, drag=False):
         next(gen)
 
 
+@needs_opengl
 def test_orthogonal_layout(qtbot):
     pytest.importorskip("napari")
     from monalisa.display._ortho import OrthoViewer
@@ -179,6 +186,7 @@ def test_gtk_theme_avoided_with_conda_glib(monkeypatch, tmp_path):
     assert env == {"QT_QPA_PLATFORMTHEME": "gtk3"}
 
 
+@needs_opengl
 def test_show_image_render3d(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)
@@ -195,6 +203,7 @@ def test_show_image_render3d(qtbot):
         ml.show_image(x, view="inline", viewer=viewer)
 
 
+@needs_opengl
 def test_show_image_old_keywords(qtbot):
     napari = pytest.importorskip("napari")
     viewer = napari.Viewer(show=False)

@@ -130,7 +130,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=OUT)
     args = ap.parse_args()
-    args.out.write_text(render())
+    args.out.write_text(render(), encoding="utf-8")
     print(f"wrote {args.out} ({len(monalisa.MATLAB_NAMES)} names)")
 
 

@@ -152,7 +152,7 @@ def main():
         "| MATLAB function | Upstream file | Code lines | Python | MATLAB parity | worst rel L2 |",
         "|---|---|---:|---|---|---:|",
     ]
-    args.out.write_text("\n".join(head + rows) + "\n")
+    args.out.write_text("\n".join(head + rows) + "\n", encoding="utf-8")
     fails = {k: v["issues"] for k, v in results.items() if v["issues"]}
     if fails:
         print(json.dumps(fails, indent=1)[:4000])
