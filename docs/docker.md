@@ -92,7 +92,7 @@ In JupyterLab, `show_image` shows images with sliders in the notebook (`view="in
 default there): this works everywhere, with no display and no extra option. The napari windows
 (`"window"`, `"3d"`, `"ortho"`) and the dialogs of `autoFlag=False` open from the container only
 on **Linux with the Docker Engine**; elsewhere, use the notebook viewer, or install monalisa
-directly on the computer (README, *Install without Docker*), where the windows open normally.
+directly on the computer (README, *Install*), where the windows open normally.
 
 | Computer | Napari windows from the container |
 |---|---|

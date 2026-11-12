@@ -13,7 +13,8 @@ and numba code.
 Clone the Repository
 ====================
 
-Clone the repository and navigate into the directory, using your terminal, navigate to the directory where you want to install the monalisa-python folder then run:
+Clone the repository and navigate into the directory, using your terminal, navigate to the directory where you want to install the monalisa-python folder then run
+(on Windows, `Git for Windows <https://git-scm.com/download/win>`_ provides ``git``):
 
 .. code-block:: bash
 
@@ -23,19 +24,19 @@ Clone the repository and navigate into the directory, using your terminal, navig
 Install the Package
 ===================
 
-With pip, in any Python environment (a virtual environment is recommended):
+The same commands work on Linux, macOS and Windows. **Either with pip**, in a virtual environment:
 
 .. code-block:: bash
 
-   pip install -e ".[io,reg]"            # numpy, scipy, numba, h5py, napari + raw-data readers + SimpleITK (registration)
-   pip install -e ".[io,reg,notebook]"   # + JupyterLab, for the tutorial notebook
-   pip install -e ".[dev,io]"            # + pytest, ruff (development)
+   python3 -m venv .venv                  # Windows: py -m venv .venv
+   source .venv/bin/activate              # Windows: .venv\Scripts\activate
+   pip install -e ".[io,reg,notebook]"
 
-With conda (everything inside the environment, no admin rights needed):
+**or with conda** (everything inside the environment, no admin rights needed):
 
 .. code-block:: bash
 
-   conda create -n monalisa -c conda-forge python=3.12 matplotlib-base xcb-util-cursor
+   conda create -n monalisa -c conda-forge python=3.12 matplotlib-base
    conda activate monalisa
    pip install -e ".[io,reg,notebook]"
 
@@ -46,23 +47,23 @@ notebooks). The extras add:
 - ``io``: the raw-data readers (Siemens ``.dat`` with `twixtools <https://github.com/pehses/twixtools>`_, ISMRMRD ``.mrd`` with ``ismrmrd``);
 - ``reg``: SimpleITK, for the deformation fields of motion-compensated reconstructions (it replaces MATLAB's ``imregdemons``);
 - ``notebook``: JupyterLab, for the tutorial notebook;
-- ``dev``: pytest (with pytest-xdist and pytest-qt), ruff, and ``reg``.
-
-Linux: Library for the Qt Windows
----------------------------------
-
-The napari viewer and the interactive steps use Qt, which on Linux with X11 needs the library
-libxcb-cursor (not available from pip). Either:
-
-- in a conda environment: ``conda install -c conda-forge xcb-util-cursor`` (monalisa loads it from the environment), or
-- system-wide: ``sudo apt install libxcb-cursor0`` (Debian, Ubuntu) or ``sudo dnf install xcb-util-cursor`` (Fedora).
-
-Without it, opening a window raises an error that says so; the notebook viewer works without it.
+- ``dev``: pytest (with pytest-xdist and pytest-qt), ruff, and ``reg``: ``pip install -e ".[dev,io]"``.
 
 .. warning::
    In a conda environment, install ``matplotlib-base``, not conda's ``matplotlib``: the latter brings
    PySide6 with a second copy of Qt, whose libraries clash with napari's (PyQt6) and crash Python as
    soon as a window opens.
+
+Linux: Library for the Qt Windows
+---------------------------------
+
+On Linux only (macOS and Windows need nothing more), the napari viewer and the interactive steps
+use Qt, which needs the library libxcb-cursor (not available from pip). Either:
+
+- in the conda environment: ``conda install -c conda-forge xcb-util-cursor`` (monalisa loads it from the environment), or
+- system-wide: ``sudo apt install libxcb-cursor0`` (Debian, Ubuntu) or ``sudo dnf install xcb-util-cursor`` (Fedora).
+
+Without it, opening a window raises an error that says so; the notebook viewer works without it.
 
 Verify Installation
 ===================
@@ -72,6 +73,7 @@ Test your installation with the unit tests, and run your first reconstruction wi
 .. code-block:: bash
 
    python -c "import monalisa; print(monalisa.__version__)"
+   pip install -e ".[dev,io]"     # pytest, for the tests
    pytest tests/unit
 
 Congratulations, you are ready to use Monalisa.

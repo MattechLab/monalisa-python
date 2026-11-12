@@ -17,7 +17,57 @@ trajectories, tutorial) with the code in Python, and the API of every function. 
 `docs/rst` (`pip install -e . -r docs/requirements.txt`, then `make -C docs html`, output in
 `docs/_build/html`) and published by `.github/workflows/docs.yml`.
 
-## Quick start with Docker
+## Install
+
+Linux, macOS and Windows, with Python 3.10 or newer (or without installing anything but Docker:
+[Install with Docker](#install-with-docker)). Get the repository (on Windows, with
+[Git for Windows](https://git-scm.com/download/win)):
+
+```bash
+git clone https://github.com/MattechLab/monalisa-python.git
+cd monalisa-python
+```
+
+then install it from that folder, **either with pip** in a virtual environment:
+
+```bash
+python3 -m venv .venv                  # Windows: py -m venv .venv
+source .venv/bin/activate              # Windows: .venv\Scripts\activate
+pip install -e ".[io,reg,notebook]"
+```
+
+**or with conda** (everything inside the environment, no admin rights needed):
+
+```bash
+conda create -n monalisa -c conda-forge python=3.12 matplotlib-base
+conda activate monalisa
+pip install -e ".[io,reg,notebook]"
+```
+
+The package installs as `monalisa-python` and is imported as `monalisa`. The extras:
+
+| Extra | Adds | |
+|---|---|---|
+| (none) | NumPy, SciPy, numba, h5py, matplotlib, napari (viewer and dialogs), ipywidgets (viewer in notebooks) | always |
+| `io` | raw-data readers: Siemens twix (`twixtools`), ISMRMRD (`ismrmrd`) | to read raw data |
+| `reg` | SimpleITK: demons registration for motion-compensated reconstructions | |
+| `notebook` | JupyterLab | for the tutorial notebook |
+| `dev` | pytest, ruff, and `reg` | development: `pip install -e ".[dev,io]"` |
+
+**Linux only: a system library for the windows.** The napari viewer and the interactive steps use
+Qt, which on Linux needs the library libxcb-cursor (not available from pip; macOS and Windows need
+nothing more). Either, in the conda environment, `conda install -c conda-forge xcb-util-cursor`
+(monalisa loads it from there), or system-wide `sudo apt install libxcb-cursor0` (Debian, Ubuntu)
+or `sudo dnf install xcb-util-cursor` (Fedora). Without it, opening a window raises an error that
+says so; the notebook viewer works without it.
+
+In a conda environment, install `matplotlib-base`, not conda's `matplotlib`: the latter brings
+PySide6 with a second copy of Qt, whose libraries clash with napari's (PyQt6) and crash Python as
+soon as a window opens. For the same reason, in a conda environment on Linux monalisa starts Qt
+with its built-in theme (`QT_QPA_PLATFORMTHEME=generic`) instead of the GTK one, which would load
+the system's GLib next to conda's; set `QT_QPA_PLATFORMTHEME` yourself to choose another.
+
+## Install with Docker
 
 The Docker image has everything installed (Python, NumPy/SciPy/numba, the raw-data readers,
 SimpleITK, napari and JupyterLab): no conda, no pip, nothing else on your computer. It is on
@@ -46,7 +96,8 @@ Tutorial 1 needs about 35 GB of memory: on macOS and Windows, raise the memory o
 (Settings → Resources). In the notebook, images are shown with sliders, on every computer. napari
 windows open from the container only on Linux (from the repository:
 `docker compose -f compose.yaml -f compose.x11.yaml up`; with an NVIDIA card, also
-`-f compose.nvidia.yaml`); on macOS and Windows, use the notebook, or install without Docker.
+`-f compose.nvidia.yaml`); on macOS and Windows, use the notebook, or [install](#install) without
+Docker.
 Details and troubleshooting: [docs/docker.md](docs/docker.md).
 
 ### From the repository
@@ -102,43 +153,6 @@ Paths in your code are the ones in the container: mount the raw data too if it l
 `docker compose run --rm -v "$PWD/../my_project:/work/mine" -w /work/mine monalisa python my_script.py`,
 or by putting your scripts in the repository folder. On Linux the container runs as uid 1000: the
 mounted folders must be writable by that user ([docs/docker.md](docs/docker.md)).
-
-## Install without Docker
-
-With pip (any Python environment, 3.10 or newer):
-
-```bash
-git clone https://github.com/MattechLab/monalisa-python.git
-cd monalisa-python
-pip install -e ".[io,reg]"            # numpy, scipy, numba, h5py, napari + raw-data readers + SimpleITK (registration)
-pip install -e ".[io,reg,notebook]"   # + JupyterLab, for the tutorial notebook
-pip install -e ".[dev,io]"            # + pytest, ruff (development)
-```
-
-With conda (everything inside the environment, no admin rights needed):
-
-```bash
-conda create -n monalisa -c conda-forge python=3.12 matplotlib-base xcb-util-cursor
-conda activate monalisa
-pip install -e ".[io,reg,notebook]"
-```
-
-The package installs as `monalisa-python` and is imported as `monalisa`.
-
-**Linux: library for the Qt windows.** The napari viewer and the interactive steps use Qt, which
-on Linux with X11 needs the library libxcb-cursor (not available from pip). Either:
-
-- in a conda environment: `conda install -c conda-forge xcb-util-cursor` (monalisa loads it from
-  the environment), or
-- system-wide: `sudo apt install libxcb-cursor0` (Debian, Ubuntu) or
-  `sudo dnf install xcb-util-cursor` (Fedora).
-
-Without it, opening a window raises an error that says so; the notebook viewer works without it.
-In a conda environment, install `matplotlib-base`, not conda's `matplotlib`: the latter brings
-PySide6 with a second copy of Qt, whose libraries clash with napari's (PyQt6) and crash Python as
-soon as a window opens. For the same reason, in a conda environment monalisa starts Qt with its
-built-in theme (`QT_QPA_PLATFORMTHEME=generic`) instead of the GTK one, which would load the
-system's GLib next to conda's; set `QT_QPA_PLATFORMTHEME` yourself to choose another.
 
 ## Package layout
 
