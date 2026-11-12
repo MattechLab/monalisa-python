@@ -41,6 +41,24 @@ jobs:
       - run: ruff check src tests examples tools demo
       - run: xvfb-run -a pytest tests/unit -q
 
+  test-macos-windows:
+    name: Unit tests (${{ matrix.os }}, pip install as in the README)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # OpenGL for the napari viewer tests: Mesa on Windows (the runners have no OpenGL 2), nothing
+      # to do on macOS.
+      - uses: pyvista/setup-headless-display-action@v3
+      - run: pip install -e ".[dev,io]" scikit-image
+      - run: pytest tests/unit -q
+
   parity:
     name: MATLAB parity (static2d)
     if: github.event_name == 'workflow_dispatch' && inputs.parity
