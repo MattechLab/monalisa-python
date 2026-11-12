@@ -8,6 +8,7 @@ header, ``MATLAB_class`` attributes, dimensions reversed, complex as a
 from __future__ import annotations
 
 import datetime as dt
+import os
 from pathlib import Path
 
 import h5py
@@ -32,8 +33,21 @@ def _header() -> bytes:
 
 
 def savemat73(path, variables: dict) -> None:
-    """Save numeric/logical arrays as a MATLAB v7.3 MAT-file (MATLAB shapes kept)."""
+    """Save numeric/logical arrays as a MATLAB v7.3 MAT-file (MATLAB shapes kept).
+
+    The file is written next to ``path`` under a temporary name and renamed when complete, so that
+    an interrupted run (killed kernel, full disk) never leaves a truncated file at ``path``."""
     path = Path(path)
+    tmp = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        _write(tmp, variables)
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink()
+
+
+def _write(path, variables: dict) -> None:
     with h5py.File(path, "w", userblock_size=512) as f:
         for name, value in variables.items():
             a = np.asarray(value)
@@ -75,8 +89,35 @@ def _read(f, ds):
     return np.asarray(data).T
 
 
+def _not_hdf5(path) -> Exception:
+    """Error for a file that h5py cannot open: an older MAT-file, or an incomplete file."""
+    size = os.path.getsize(path)
+    with open(path, "rb") as fh:
+        head = fh.read(128)
+    if size == 0:
+        why = "the file is empty"
+    elif head.startswith(b"MATLAB") and not head.startswith(b"MATLAB 7.3"):
+        return None  # a MAT-file of version 7 or older: read with scipy
+    elif head.startswith(b"MATLAB 7.3"):
+        why = f"the file is incomplete ({size} bytes): it was probably cut off while being written or copied"
+    else:
+        why = f"it is not a MAT-file ({size} bytes, starts with {head[:16]!r})"
+    return OSError(f"loadmat73: cannot read {path}: {why}. Write it again (re-run the step that "
+                   f"saves it), or copy it again completely.")
+
+
 def loadmat73(path, variable_names=None) -> dict:
-    """Numeric, logical and cell variables of a MATLAB v7.3 MAT-file, with MATLAB shapes."""
+    """Numeric, logical and cell variables of a MATLAB v7.3 MAT-file, with MATLAB shapes.
+
+    Older MAT-files (MATLAB ``save`` without ``-v7.3``) are read with ``scipy.io.loadmat``."""
+    if not h5py.is_hdf5(path):
+        err = _not_hdf5(path)
+        if err is not None:
+            raise err
+        import scipy.io as sio
+
+        data = sio.loadmat(path, variable_names=variable_names)
+        return {k: v for k, v in data.items() if not k.startswith("__")}
     out = {}
     with h5py.File(path, "r") as f:
         for name, ds in f.items():
