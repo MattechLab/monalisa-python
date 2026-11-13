@@ -38,17 +38,18 @@ ENV LIBGL_ALWAYS_SOFTWARE=1 \
 RUN useradd --create-home --uid 1000 --shell /bin/bash monalisa
 WORKDIR /work
 
-# Dependencies first, from pyproject.toml: this layer is rebuilt only when they change.
+# Dependencies first, from pyproject.toml: this layer is rebuilt only when they change. No heredoc
+# (RUN <<EOF): builders without heredoc support (legacy builder, some VS Code dev container builds)
+# would silently run nothing and give an image without the libraries. The final import fails the
+# build if they are missing.
 COPY pyproject.toml /tmp/pyproject.toml
-RUN python - <<'EOF' > /tmp/requirements.txt
-import tomllib
-project = tomllib.load(open("/tmp/pyproject.toml", "rb"))["project"]
-deps = list(project["dependencies"])
-for extra in ("io", "reg", "notebook", "test"):
-    deps += [d for d in project["optional-dependencies"][extra] if not d.startswith("monalisa-python")]
-print("\n".join(deps))
-EOF
-RUN pip install -r /tmp/requirements.txt
+RUN python -c "import tomllib; \
+p = tomllib.load(open('/tmp/pyproject.toml', 'rb'))['project']; \
+extras = [d for e in ('io', 'reg', 'notebook', 'test') for d in p['optional-dependencies'][e]]; \
+print('\n'.join(p['dependencies'] + [d for d in extras if not d.startswith('monalisa-python')]))" \
+        > /tmp/requirements.txt \
+    && pip install -r /tmp/requirements.txt \
+    && python -c "import numpy, scipy, numba, h5py, napari, ipykernel, jupyterlab"
 
 # The repository, installed in editable mode: when a folder is mounted on /work (compose.yaml),
 # its code is the one that runs.
